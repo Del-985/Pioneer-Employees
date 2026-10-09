@@ -349,3 +349,6 @@ h1, h2, h3 { letter-spacing: -0.03em; }
  .field-photo-upload .button {width:100%}
  .field-photos {grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+.schedule-shifts {margin-top:24px}
+.schedule-shifts .schedule-item:last-child {margin-bottom:0}
