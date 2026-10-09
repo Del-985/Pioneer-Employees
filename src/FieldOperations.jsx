@@ -20,6 +20,7 @@ function Notice({error,success}){
 export function FieldJobActions({job,onChanged}){
  const [report,setReport]=useState(null);
  const [photos,setPhotos]=useState([]);
+ const [photoEnabled,setPhotoEnabled]=useState(false);
  const [notes,setNotes]=useState('');
  const [issueNotes,setIssueNotes]=useState('');
  const [salt,setSalt]=useState(false);
@@ -30,11 +31,13 @@ export function FieldJobActions({job,onChanged}){
  const [error,setError]=useState('');
  const [success,setSuccess]=useState('');
  const load=useCallback(async()=>{
-   const [rep,pics]=await Promise.all([
+   const [rep,pics,capabilities]=await Promise.all([
      apiRequest('/api/employee/jobs/'+job.id+'/report'),
      apiRequest('/api/employee/jobs/'+job.id+'/photos'),
+     apiRequest('/api/employee/capabilities'),
    ]);
    setReport(rep.data);setPhotos(Array.isArray(pics.data)?pics.data:[]);
+   setPhotoEnabled(capabilities.data?.photoUploads===true);
  },[job.id]);
  useEffect(()=>{let active=true;load().catch(e=>{if(active)setError(errText(e));});return()=>{active=false;};},[load]);
  const status=report?.status||'assigned';
@@ -118,7 +121,8 @@ export function FieldJobActions({job,onChanged}){
        </a>
      )}</div>}
      {!photos.length&&<p className="muted">No photographs have been uploaded for this job.</p>}
-     {!locked&&<form className="field-photo-upload" onSubmit={uploadPhoto}>
+     {!photoEnabled&&<p className="alert alert-info">Photo uploads are not enabled for this business yet. Your work notes will still be submitted normally.</p>}
+     {!locked&&photoEnabled&&<form className="field-photo-upload" onSubmit={uploadPhoto}>
        <label className="field"><span>Photo Type</span><select value={kind} onChange={e=>setKind(e.target.value)}>
          <option value="before">Before</option><option value="after">After</option><option value="issue">Issue</option>
        </select></label>
@@ -126,7 +130,7 @@ export function FieldJobActions({job,onChanged}){
          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
        <button className="button button-outline" type="submit" disabled={busy||!file}>Upload Photo</button>
      </form>}
-     <p className="muted footnote">Photos require configured Pioneer object storage. If unavailable, record details in your job notes.</p>
+     <p className="muted footnote">Images are stored securely through Pioneer object storage. Photos are limited to 10 MB each.</p>
    </div>
  </section>;
 }
