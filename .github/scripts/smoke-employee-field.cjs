@@ -40,6 +40,7 @@ async function run(){
       }
       let result={data:[]};
       if(path==='/api/employee/me')result={data:profile};
+      else if(path==='/api/employee/capabilities')result={data:{photoUploads:false}};
       else if(path==='/api/employee/jobs' || path==='/api/employee/jobs/'){
         result={data:[mockJob]};
       }else if(path==='/api/employee/jobs/'+jobId){
@@ -68,7 +69,7 @@ async function run(){
     });
     async function visit(path,expected){
       const response=await page.goto(origin+'/#/'+path,{waitUntil:'domcontentloaded'});
-      if(response?.status()!==200)throw new Error('HTTP '+response?.status()+' on '+path);
+      if(response && response.status()!==200)throw new Error('HTTP '+response.status()+' on '+path);
       await page.getByText(expected,{exact:false}).first().waitFor({timeout:10000});
       console.log('PASS: /'+path+' rendered '+expected);
     }
