@@ -46,6 +46,8 @@ async function run() {
     if (browser) await browser.close();
     preview.kill('SIGTERM');
   }
-  if (failed) process.exitCode = 1;
+  // npm may leave the Vite child process alive after SIGTERM. Explicitly exit
+  // after both browser inspections so CI does not hang on the preview pipe.
+  process.exit(failed ? 1 : 0);
 }
 run().catch(e => { console.error(e.stack); process.exit(1); });
