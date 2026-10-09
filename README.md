@@ -2,7 +2,28 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
-## v0.1 features
+## v0.2 features
+
+The employee workspace is now connected to Pioneer Admin's Field Operations tools.
+
+- Acknowledge, start, flag issues, and submit completion reports for assigned jobs
+- Manager review and approval (job status remains in progress until approved)
+- Record salt use and field completion notes
+- Before/after/issue photo uploads using signed object-storage URLs **when object storage is configured**
+- Save recurring weekly availability, including overnight ranges
+- Review and accept/decline shift offers; accepted shifts appear on Schedule
+- See assigned routes, crew members, and ordered stops
+- Receive assignment, route, cancellation and shift-offer email notifications
+- Existing v0.1 sign-in, dashboard, jobs, schedule, profile, and password management
+
+**Photo-upload prerequisites:** Pioneer Backend must have `OBJECT_STORAGE_BUCKET`,
+`OBJECT_STORAGE_ACCESS_KEY_ID`, `OBJECT_STORAGE_SECRET_ACCESS_KEY`,
+and related S3-compatible settings configured in Render. The storage bucket
+must permit CORS `PUT` requests from `https://employee.pioneeroutdoorservices.com`
+with `Content-Type`. The portal hides upload controls until object storage is
+available. An unconfigured bucket does not prevent job reporting.
+
+## v0.1 foundation (retained)
 
 - Separate employee sign-in, password reset and account recovery screens
 - Employee dashboard with assigned-work totals and next assignment
@@ -12,7 +33,7 @@ Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared 
 - Active-employee and assigned-work authorization enforced **by the backend**, not the browser
 - Mobile-first navigation and layouts
 
-The portal intentionally does **not** include employee job status updates, shifts, time clock, payroll, customer billing or access to unrelated employee/customer records. Those belong to later milestones.
+The portal intentionally excludes time clock, payroll, customer billing and access to unrelated employee/customer records. Those belong to later milestones.
 
 ## Getting started
 
@@ -58,6 +79,11 @@ The API routes are hosted in **Pioneer-Backend**:
 - `GET /api/employee/me` — current user profile and **active** employment records
 - `GET /api/employee/jobs` — exclusively this user's assigned jobs
 - `GET /api/employee/jobs/:jobId` — details only when still assigned to the active employee
+- `POST /api/employee/jobs/:jobId/action` — report job acknowledgment, start, issue or completion
+- `GET /api/employee/availability` / `PUT /api/employee/availability` — weekly availability
+- `GET /api/employee/shifts` / `POST /api/employee/shifts/:shiftId/respond` — shift offers
+- `GET /api/employee/routes` — active crew routes
+- `POST /api/employee/jobs/:jobId/photos/upload-intent` and `POST /api/employee/photos/:photoId/complete` — signed photo upload workflow
 - Existing `/api/auth/login`, `/api/auth/logout`, `/api/auth/password/reset/request`, `/api/auth/password/reset`, and `/api/auth/password/change` routes remain the authentication system.
 
 Backend production environment variables:
@@ -76,8 +102,9 @@ The backend derives employee identity from the **HTTP-only staff session cookie*
 
 An employee without any active employment records receives 403. Deactivating a profile removes access to its assignments immediately on the next API call. The global login credential can still exist; broader account deactivation/session revocation is an independent management policy.
 
-## Roadmap
+## Next roadmap
 
-v0.2: shift availability and acceptance, multi-person routes, job progress, completion reports, photos.  
-v0.3: onboarding, incident reports, employee time clock and supervisor review.  
+v0.3: onboarding, safety checklists, incident reports, time clock and supervisor review.  
 v0.4: approved payroll hours and bookkeeping integration.
+
+For v0.2 field dispatch management, open **Pioneer Admin → Field Operations**.
