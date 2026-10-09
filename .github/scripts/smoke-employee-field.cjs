@@ -44,11 +44,11 @@ async function run(){
         result={data:[mockJob]};
       }else if(path==='/api/employee/jobs/'+jobId){
         result={data:mockJob};
-      }else if(path===`/api/employee/jobs/${jobId}/report'){
+      }else if(path===`/api/employee/jobs/${jobId}/report`){
         result={data:reportStatus?{id:'77777777-7777-4777-8777-777777777777',status:reportStatus}:null};
-      }else if(path===`/api/employee/jobs/${jobId}/photos'){
+      }else if(path===`/api/employee/jobs/${jobId}/photos`){
         result={data:[]};
-      }else if(path===`/api/employee/jobs/${jobId}/action'){
+      }else if(path===`/api/employee/jobs/${jobId}/action`){
         actionCount++;
         reportStatus='acknowledged';
         result={data:{status:reportStatus}};
