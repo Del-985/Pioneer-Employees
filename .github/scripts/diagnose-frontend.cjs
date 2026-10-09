@@ -15,6 +15,7 @@ async function run() {
     const urls = [
       'http://127.0.0.1:4173/',
       'https://del-985.github.io/Pioneer-Employees/',
+      'https://employee.pioneeroutdoorservices.com/',
     ];
     for (const url of urls) {
       const page = await browser.newPage();

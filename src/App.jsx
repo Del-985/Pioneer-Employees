@@ -87,7 +87,12 @@ function usePortalAuth() {
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    // Never attempt to authenticate employees over an unencrypted production URL.
+    if (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname)) {
+      void refresh();
+    }
+  }, [refresh]);
 
   async function login(email, password) {
     await apiRequest('/api/auth/login', {
@@ -645,8 +650,34 @@ function PortalShell({ profile, logout }) {
   );
 }
 
+function SecureConnectionNotice() {
+  const secureUrl = 'https://' + window.location.host +
+    window.location.pathname + window.location.search + window.location.hash;
+  return (
+    <div className="auth-background">
+      <div className="auth-card auth-card-centered">
+        <Brand compact />
+        <span className="eyebrow">Connection Security</span>
+        <h1>Secure Connection Required</h1>
+        <p className="muted">
+          This employee portal is currently loading without HTTPS. For your protection,
+          do not enter a password until a secure connection is available.
+        </p>
+        <a className="button button-primary button-full" href={secureUrl}>Open Secure Portal</a>
+        <p className="auth-help">
+          If the secure link does not open, contact your administrator.
+          HTTPS must be enabled for this domain in GitHub Pages.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const auth = usePortalAuth();
+  const insecureProductionOrigin = window.location.protocol !== 'https:' &&
+    !['localhost', '127.0.0.1'].includes(window.location.hostname);
+  if (insecureProductionOrigin) return <SecureConnectionNotice />;
 
   return (
     <Routes>
