@@ -492,7 +492,21 @@ function JobDetail({ jobs, loading, onChanged }) {
   );
 }
 
-function Schedule({ jobs }) {
+function Schedule({ jobs, profile }) {
+  const [acceptedShifts, setAcceptedShifts] = useState([]);
+  const [shiftError, setShiftError] = useState('');
+  useEffect(() => {
+    let active = true;
+    Promise.all(profile.employment.map((entry) =>
+      apiRequest('/api/employee/shifts?businessUnitId=' + entry.businessUnitId)
+        .then((response) => (response.data || [])
+          .filter((shift) => shift.status !== 'cancelled' &&
+            shift.offers?.some((offer) => offer.employeeId === entry.id && offer.status === 'accepted'))
+          .map((shift) => ({ ...shift, businessName: entry.businessName })))
+    )).then((results) => { if (active) setAcceptedShifts(results.flat()); })
+      .catch((error) => { if (active) setShiftError(error instanceof Error ? error.message : 'Shifts unavailable.'); });
+    return () => { active = false; };
+  }, [profile]);
   const scheduled = [...jobs]
     .filter((job) => job.scheduledStart && !['cancelled', 'completed'].includes(job.status))
     .sort((a, b) => new Date(a.scheduledStart) - new Date(b.scheduledStart));
@@ -520,7 +534,18 @@ function Schedule({ jobs }) {
             </section>
           ))}
         </div>}
-      <p className="muted footnote">This shows assigned work orders; shift offers and availability management are planned for a later update.</p>
+      <section className="content-card schedule-shifts">
+        <div className="section-heading"><h2>Accepted Shifts</h2><Link to="/shifts">Manage Offers →</Link></div>
+        {shiftError && <ErrorMessage message={shiftError} />}
+        {acceptedShifts.length ? acceptedShifts.map((shift) => (
+          <Link key={shift.id} to="/shifts" className="schedule-item">
+            <div><strong>{shift.title}</strong>
+              <span>{shift.businessName} · {dateTime(shift.startsAt)}</span></div>
+            <span className="status-tag status-completed">Accepted</span>
+          </Link>
+        )) : <p className="muted">You have no accepted shifts yet.</p>}
+      </section>
+      <p className="muted footnote">Job assignments and accepted shifts are managed separately by your supervisor.</p>
     </div>
   );
 }
@@ -638,7 +663,7 @@ function PortalShell({ profile, logout }) {
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/jobs" element={<Jobs jobs={jobs} loading={loading} error={error} onRefresh={loadJobs} />} />
             <Route path="/jobs/:jobId" element={<JobDetail jobs={jobs} loading={loading} onChanged={loadJobs} />} />
-            <Route path="/schedule" element={<Schedule jobs={jobs} />} />
+            <Route path="/schedule" element={<Schedule jobs={jobs} profile={profile} />} />
             <Route path="/shifts" element={<ShiftOffersPage profile={profile} />} />
             <Route path="/availability" element={<AvailabilityPage profile={profile} />} />
             <Route path="/routes" element={<CrewRoutesPage profile={profile} />} />
