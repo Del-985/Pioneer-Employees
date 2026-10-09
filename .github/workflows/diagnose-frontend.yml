@@ -1,0 +1,27 @@
+name: Diagnose Employee Frontend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install application and browser driver
+        run: |
+          npm install
+          npm install --no-save playwright
+      - name: Build application
+        run: npm run build
+      - name: Inspect production and local application in Chrome
+        run: node .github/scripts/diagnose-frontend.cjs
