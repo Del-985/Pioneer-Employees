@@ -23,7 +23,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     env:
       VITE_API_BASE_URL: https://api.pioneerlegacyworks.com
-      VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+      VITE_BASE_PATH: /
     steps:
       - name: Checkout
         uses: actions/checkout@v4

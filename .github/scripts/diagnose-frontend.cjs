@@ -13,7 +13,7 @@ async function run() {
   try {
     browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-sandbox'] });
     const urls = [
-      'http://127.0.0.1:4173/Pioneer-Employees/',
+      'http://127.0.0.1:4173/',
       'https://del-985.github.io/Pioneer-Employees/',
     ];
     for (const url of urls) {

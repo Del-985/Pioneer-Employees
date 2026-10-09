@@ -43,14 +43,13 @@ The repository includes `.github/workflows/deploy-pages.yml`. On the first deplo
 
 GitHub's repository token cannot create a Pages site until Pages is enabled in repository settings. The workflow will build successfully but fail at the `Configure GitHub Pages` step otherwise.
 
-For the default project site, the portal URL is expected to be:
-`https://del-985.github.io/Pioneer-Employees/`
+The repository's configured custom domain is **employee.pioneeroutdoorservices.com**. GitHub Pages redirects the old `https://del-985.github.io/Pioneer-Employees/` URL to the custom hostname.
 
-The Vite build defaults to `/Pioneer-Employees/` as the base asset path. The portal uses `HashRouter` to make direct links work on GitHub Pages without server rewrite rules.
+The Vite build therefore uses `/` as the asset base path. Building against `/Pioneer-Employees/` breaks the JavaScript and CSS loads at the custom domain and produces a blank page.
 
-### Custom employee domain
+The employee portal uses `HashRouter` so internal navigation works without server rewrite rules.
 
-A custom domain like `employees.pioneerlegacyworks.com` is recommended. Complete DNS and GitHub Pages custom-domain setup separately. Set the GitHub Actions repository variable `VITE_BASE_PATH` to `/` and rebuild for a root-level custom domain.
+**Authentication security:** Enable and verify GitHub Pages HTTPS for `https://employee.pioneeroutdoorservices.com/` before staff sign in. Never enter account credentials over an `http://` URL.
 
 ## Backend and email configuration
 
@@ -63,8 +62,8 @@ The API routes are hosted in **Pioneer-Backend**:
 
 Backend production environment variables:
 
-- `CORS_ORIGINS` must contain the employee origin, either `https://del-985.github.io` or `https://employees.pioneerlegacyworks.com`, **in addition to** all existing allowed origins.
-- `EMPLOYEE_PASSWORD_RESET_URL` must be set to the employee recovery URL after the employee site is published. For GitHub Pages, `https://del-985.github.io/Pioneer-Employees/#/reset-password`; for a custom domain, `https://employees.pioneerlegacyworks.com/#/reset-password`.
+- `CORS_ORIGINS` must contain the employee origin, either `https://employee.pioneeroutdoorservices.com`, **in addition to** all existing allowed origins.
+- `EMPLOYEE_PASSWORD_RESET_URL` must be set to the employee recovery URL after the employee site is published. For the configured custom domain, `https://employee.pioneeroutdoorservices.com/#/reset-password`.
 - `PASSWORD_RESET_URL` should continue pointing to the Admin reset route. The backend chooses the employee URL for employee-only accounts or manager-issued employee invitations.
 
 GitHub Pages links use the URL hash for navigation. The backend adds `?token=...` to the URL before the hash, which the employee recovery page supports.

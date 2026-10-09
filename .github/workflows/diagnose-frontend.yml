@@ -1,9 +1,11 @@
 name: Diagnose Employee Frontend
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows:
+      - Deploy Pioneer Employees
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
