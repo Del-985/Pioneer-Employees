@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
 import { ApiError, apiRequest } from './lib/api.js';
+import { FieldJobActions, AvailabilityPage, ShiftOffersPage, CrewRoutesPage } from './FieldOperations.jsx';
 
 const navigation = [
   { to: '/', label: 'Dashboard', symbol: '▦', end: true },
   { to: '/jobs', label: 'My Jobs', symbol: '▤' },
   { to: '/schedule', label: 'Schedule', symbol: '▦' },
+  { to: '/shifts', label: 'Shifts', symbol: '◷' },
+  { to: '/availability', label: 'Availability', symbol: '◴' },
+  { to: '/routes', label: 'Routes', symbol: '≡' },
   { to: '/profile', label: 'Profile', symbol: '◉' },
 ];
 
@@ -425,7 +429,7 @@ function Jobs({ jobs, loading, error, onRefresh }) {
   );
 }
 
-function JobDetail({ jobs, loading }) {
+function JobDetail({ jobs, loading, onChanged }) {
   const { jobId } = useParams();
   const [job, setJob] = useState(null);
   const [error, setError] = useState('');
@@ -479,7 +483,9 @@ function JobDetail({ jobs, loading }) {
               <p className="instructions">{job.description || 'No special instructions have been added. Contact your manager if details are missing.'}</p>
             </section>
           </div>
-          <div className="readonly-note">Work-order status changes are managed in Pioneer Admin for this version of the employee portal.</div>
+          <div className="detail-grid field-action-grid">
+            <FieldJobActions job={job} onChanged={onChanged}/>
+          </div>
         </>
       )}
     </div>
@@ -631,8 +637,11 @@ function PortalShell({ profile, logout }) {
             <Route path="/" element={<Dashboard profile={profile} jobs={jobs} loading={loading} error={error} onRefresh={loadJobs} />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/jobs" element={<Jobs jobs={jobs} loading={loading} error={error} onRefresh={loadJobs} />} />
-            <Route path="/jobs/:jobId" element={<JobDetail jobs={jobs} loading={loading} />} />
+            <Route path="/jobs/:jobId" element={<JobDetail jobs={jobs} loading={loading} onChanged={loadJobs} />} />
             <Route path="/schedule" element={<Schedule jobs={jobs} />} />
+            <Route path="/shifts" element={<ShiftOffersPage profile={profile} />} />
+            <Route path="/availability" element={<AvailabilityPage profile={profile} />} />
+            <Route path="/routes" element={<CrewRoutesPage profile={profile} />} />
             <Route path="/profile" element={<Profile profile={profile} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
