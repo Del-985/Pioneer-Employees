@@ -17,7 +17,8 @@ const mockJob={id:jobId,businessUnitId:businessId,businessName:'Pioneer Outdoor 
   }};
 const profile={user:{id:mockId,email:'employee@example.test',displayName:'Test Employee'},
   employment:[{id:employeeId,businessUnitId:businessId,businessName:'Pioneer Outdoor Services',
-    displayName:'Test Employee',jobTitle:'Snow Removal Technician'}]};
+    displayName:'Test Employee',jobTitle:'Snow Removal Technician',
+    payRate:{hourlyCents:2375,effectiveOn:'2026-09-28',overtimeMultiplierBps:15000}}]};
 const headers={'access-control-allow-origin':origin,'access-control-allow-credentials':'true',
   'access-control-allow-methods':'GET,POST,PUT,PATCH,OPTIONS',
   'access-control-allow-headers':'Content-Type','content-type':'application/json'};
@@ -30,7 +31,7 @@ async function run(){
     browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
     const page=await browser.newPage();
     let reportStatus=null;
-    let actionCount=0, saveCount=0;
+    let actionCount=0, saveCount=0, profileReads=0;
     const errors=[];
     page.on('pageerror',e=>errors.push(e.stack||e.message));
     await page.route('https://api.pioneerlegacyworks.com/**',async route=>{
@@ -39,7 +40,9 @@ async function run(){
         await route.fulfill({status:204,headers});return;
       }
       let result={data:[]};
-      if(path==='/api/employee/me')result={data:profile};
+      if(path==='/api/employee/me'){
+        profileReads++;result={data:profile};
+      }
       else if(path==='/api/employee/capabilities')result={data:{photoUploads:false}};
       else if(path==='/api/employee/jobs' || path==='/api/employee/jobs/'){
         result={data:[mockJob]};
@@ -112,6 +115,14 @@ async function run(){
     await page.getByText('separate from gross wages',{exact:false}).first().waitFor({timeout:10000});
     console.log('PASS: employee pay adjustments and expense reimbursements display separately');
     await visit('profile','My Profile');
+    await page.getByText('$23.75/hour',{exact:true}).waitFor({timeout:10000});
+    await page.getByText('Effective 9/28/2026',{exact:true}).waitFor({timeout:10000});
+    const previousReads=profileReads;
+    await page.getByRole('button',{name:'Refresh Pay Rate'}).click();
+    await page.waitForTimeout(100);
+    await page.getByText('$23.75/hour',{exact:true}).waitFor({timeout:10000});
+    if(profileReads<=previousReads)throw new Error('Employee profile hourly pay did not refresh via the authenticated /me API');
+    console.log('PASS: employee sees only current hourly rate and effective date in My Profile');
     if(errors.length)throw new Error('Uncaught browser errors: '+JSON.stringify(errors));
     console.log('PASS: employee v0.2 authenticated browser smoke test');
   }finally{
