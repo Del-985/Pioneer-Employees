@@ -449,3 +449,13 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .gross-pay-native .field-section-heading h3{margin:7px 0;font-size:1.02rem}
 .gross-pay-native .gross-pay-breakdown strong{font-variant-numeric:tabular-nums}
 .gross-pay-native .content-card>.muted{margin-top:14px;font-size:.78rem;line-height:1.65}
+
+/* v0.4.4 employee tax preview */
+.gross-pay-tax{display:grid;gap:13px;margin:21px 0 30px}
+.gross-pay-tax h2{margin:0}
+.gross-pay-tax>.muted{margin:0;line-height:1.7}
+.gross-pay-tax .content-card{margin:0;min-width:0}
+.gross-pay-tax .field-section-heading{align-items:start;gap:12px;flex-wrap:wrap}
+.gross-pay-tax .field-section-heading h3{font-size:1.03rem;margin:5px 0}
+.gross-pay-tax .gross-pay-breakdown strong{font-variant-numeric:tabular-nums}
+.gross-pay-tax .content-card>.muted{font-size:.77rem;line-height:1.7;margin-top:14px}
