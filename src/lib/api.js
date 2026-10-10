@@ -63,7 +63,8 @@ function prepareRequest(path, options = {}) {
   const url = `${API_BASE_URL}${path.startsWith('/') ? path : '/'+path}`;
   const headers = new Headers(options.headers || {});
   const employeeRequest = path.startsWith('/api/employee/');
-  const token = employeeRequest ? getEmployeeSessionToken() : null;
+  const token = employeeRequest && path !== '/api/employee/session/login'
+    ? getEmployeeSessionToken() : null;
   if (token) headers.set('Authorization', 'Bearer '+token);
   if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
