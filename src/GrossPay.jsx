@@ -11,19 +11,22 @@ export default function GrossPayPage({profile}){
   const [adjustments,setAdjustments]=useState([]);
   const [providerStatements,setProviderStatements]=useState([]);
   const [nativePreviews,setNativePreviews]=useState([]);
+  const [taxPreviews,setTaxPreviews]=useState([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const load=useCallback(async()=>{
     if(!unit)return;
     setBusy(true);
-    try{const [res,adj,provider,native]=await Promise.all([
+    try{const [res,adj,provider,native,tax]=await Promise.all([
       apiRequest('/api/employee/pay/statements?businessUnitId='+unit),
       apiRequest('/api/employee/pay/adjustments?businessUnitId='+unit),
       apiRequest('/api/employee/pay/provider-statements?businessUnitId='+unit),
       apiRequest('/api/employee/pay/native-preview?businessUnitId='+unit),
+      apiRequest('/api/employee/pay/tax-preview?businessUnitId='+unit),
     ]);
       setStatements(res.data||[]);setAdjustments(adj.data||[]);
       setProviderStatements(provider.data||[]);setNativePreviews(native.data||[]);
+      setTaxPreviews(tax.data||[]);
       setError('');}
     catch(e){setError(e instanceof Error?e.message:'Unable to load pay history.');}
     finally{setBusy(false);}
@@ -45,6 +48,42 @@ export default function GrossPayPage({profile}){
         {profile.employment.map(e=><option key={e.id} value={e.businessUnitId}>{e.businessName}</option>)}
       </select></label>}
     {error&&<p className="alert alert-error" role="alert">{error}</p>}
+    <section className="gross-pay-tax">
+      <h2>Pioneer Tax Withholding — Approved Estimates</h2>
+      <p className="muted">These projections are based on management-verified
+        employee tax elections and 2026 withholding rules. They are NOT final pay
+        statements or proof of payment. Employer taxes, filing and disbursement
+        are not complete.</p>
+      <div className="gross-pay-list">{taxPreviews.map(item=><article
+        key={item.calculationId} className="content-card">
+        <div className="field-section-heading">
+          <div><span className="eyebrow">Reviewed Tax Estimate · Not Payable</span>
+            <h3>{item.periodStart} – {previousDay(item.periodEnd)}</h3></div>
+          <span className="status-tag">No Payment Authorized</span>
+        </div>
+        <div className="gross-pay-gross">{money(item.projectedNetCents)}
+          <small>Projected Net Only — Not Final</small></div>
+        <div className="gross-pay-breakdown">
+          <div><span>Gross earnings</span><strong>{money(item.grossCents)}</strong></div>
+          <div><span>Federal income withholding</span><strong>{money(item.federalIncomeCents)}</strong></div>
+          <div><span>Ohio income withholding</span><strong>{money(item.ohioIncomeCents)}</strong></div>
+          <div><span>Toledo income withholding</span><strong>{money(item.toledoIncomeCents)}</strong></div>
+          <div><span>School district withholding</span><strong>{money(item.schoolIncomeCents)}</strong></div>
+          <div><span>Employee Social Security</span><strong>{money(item.socialSecurityCents)}</strong></div>
+          <div><span>Employee Medicare</span><strong>{money(item.medicareCents)}</strong></div>
+          <div><span>Additional Medicare</span><strong>{money(item.additionalMedicareCents)}</strong></div>
+          <div><span>Total estimated withholding</span><strong>{money(item.totalWithholdingCents)}</strong></div>
+          <div><span>Voluntary deductions</span><strong>{money(item.voluntaryDeductionsCents)}</strong></div>
+          <div><span>Separate reimbursements</span><strong>{money(item.reimbursementCents)}</strong></div>
+          <div><span>Projected net — unpaid</span><strong>{money(item.projectedNetCents)}</strong></div>
+        </div>
+        <p className="muted">Calculated using {item.taxRuleVersion}.
+          No check, direct deposit, tax deposit, or official pay statement was issued.
+          Verify amounts with management before relying on them.</p>
+      </article>)}</div>
+      {!taxPreviews.length&&!busy&&<p className="muted">
+        No approved withholding estimates are available yet.</p>}
+    </section>
     <section className="gross-pay-native">
       <h2>Pioneer Native Earnings — Approved Previews</h2>
       <p className="muted">These are internally reviewed gross earnings calculations.
@@ -137,7 +176,7 @@ export default function GrossPayPage({profile}){
       </article>)}
       {!adjustments.length&&!busy&&<p className="muted">No posted pay adjustments yet.</p>}
     </section>
-    {!busy&&!statements.length&&!adjustments.length&&!providerStatements.length&&!nativePreviews.length&&!error&&<div className="empty-state">
+    {!busy&&!statements.length&&!adjustments.length&&!providerStatements.length&&!nativePreviews.length&&!taxPreviews.length&&!error&&<div className="empty-state">
       <h3>No gross-pay records yet</h3>
       <p>When management reviews and posts a payroll register, the resulting gross wages appear here.
         Approved hours are available now in your Hours & Time Clock section.</p>
