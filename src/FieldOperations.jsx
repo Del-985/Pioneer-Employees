@@ -1,6 +1,6 @@
 import { useCallback,useEffect,useMemo,useState,useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { apiRequest, API_BASE_URL } from './lib/api.js';
+import { apiRequest, apiBinaryRequest, API_BASE_URL } from './lib/api.js';
 import { prepareFieldPhoto } from './lib/photo.js';
 
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -13,6 +13,40 @@ const fmt=(value)=>value?new Intl.DateTimeFormat('en-US',{
 const workUnit=(profile)=>profile.employment?.[0]?.businessUnitId||'';
 const errText=(err)=>err instanceof Error?err.message:'Unable to complete this operation.';
 const photoUrl=(url)=>url?.startsWith('/')?API_BASE_URL+url:url;
+
+function EmployeePhoto({photo,jobTitle}){
+ const protectedPhoto=photo.downloadUrl?.startsWith('/api/employee/');
+ const [displayUrl,setDisplayUrl]=useState(protectedPhoto?null:photoUrl(photo.downloadUrl));
+ const [error,setError]=useState('');
+ useEffect(()=>{
+   let cancelled=false,objectUrl=null;
+   if(!protectedPhoto){
+     setDisplayUrl(photoUrl(photo.downloadUrl));
+     return()=>{};
+   }
+   setDisplayUrl(null);
+   setError('');
+   apiBinaryRequest(photo.downloadUrl).then(blob=>{
+     if(cancelled)return;
+     objectUrl=URL.createObjectURL(blob);
+     setDisplayUrl(objectUrl);
+   }).catch(cause=>{if(!cancelled)setError(errText(cause));});
+   return()=>{
+     cancelled=true;
+     if(objectUrl)URL.revokeObjectURL(objectUrl);
+   };
+ },[photo.downloadUrl,protectedPhoto]);
+ if(error)return <div className="field-photo" role="status">
+   <span>Photo unavailable: {error}</span>
+ </div>;
+ if(!displayUrl)return <div className="field-photo"><span>Loading photo…</span></div>;
+ return <a className="field-photo" href={displayUrl} target="_blank"
+   rel="noopener noreferrer">
+   <img loading="lazy" src={displayUrl} alt={photo.kind+' photo for '+jobTitle}/>
+   <span>{photo.kind==='before'?'Before':photo.kind==='after'?'After':'Issue'}</span>
+ </a>;
+}
+
 function Notice({error,success}){
  return <>{error&&<p className="alert alert-error" role="alert">{error}</p>}
  {success&&<p className="alert alert-success" role="status">{success}</p>}</>;
@@ -139,10 +173,7 @@ export function FieldJobActions({job,onChanged}){
    <div className="field-photo-section">
      <h3>Job Photographs</h3>
      {photos.length>0&&<div className="field-photos">{photos.map(photo=>
-       <a className="field-photo" href={photoUrl(photo.downloadUrl)} key={photo.id} target="_blank" rel="noopener noreferrer">
-         <img loading="lazy" src={photoUrl(photo.downloadUrl)} alt={photo.kind+' photo for '+job.title}/>
-         <span>{photo.kind==='before'?'Before':photo.kind==='after'?'After':'Issue'}</span>
-       </a>
+       <EmployeePhoto key={photo.id} photo={photo} jobTitle={job.title}/>
      )}</div>}
      {!photos.length&&<p className="muted">No photographs have been uploaded for this job.</p>}
      {!photoEnabled&&<p className="alert alert-info">Checking photo storage availability. If this message remains, refresh or ask your manager.</p>}
