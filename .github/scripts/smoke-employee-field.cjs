@@ -72,6 +72,17 @@ async function run(){
             description:'Driveway salt reimbursement',serviceDate:'2026-10-08',
             paymentStatus:'not_recorded',grossWageImpactCents:0,reimbursementCents:1250},
         ]};
+      }else if(path==='/api/employee/pay/tax-preview'){
+        result={data:[{
+          calculationId:'tax-calc-test',periodStart:'2026-09-28',periodEnd:'2026-10-05',
+          taxRuleVersion:'2026-federal-ohio-aug-toledo-v1',
+          grossCents:100000,federalIncomeCents:6500,ohioIncomeCents:2000,
+          toledoIncomeCents:2500,schoolIncomeCents:0,socialSecurityCents:6200,
+          medicareCents:1450,additionalMedicareCents:0,totalWithholdingCents:18650,
+          voluntaryDeductionsCents:2000,reimbursementCents:1250,
+          projectedNetCents:80600,officialPayStub:false,canDisburse:false,
+          projectedNetIsFinal:false,paymentStatus:'not_processed',
+        }]};
       }else if(path==='/api/employee/pay/native-preview'){
         result={data:[{calculationId:'native-snapshot-mock',
           periodStart:'2026-09-28',periodEnd:'2026-10-05',
@@ -136,6 +147,13 @@ async function run(){
     await page.getByText('Not Payable',{exact:true}).first().waitFor({timeout:10000});
     await page.getByText('Tax withholding').first().waitFor({timeout:10000});
     console.log('PASS: employees see only approved untaxed native earnings previews, never payable net wages');
+    await page.getByText('Pioneer Tax Withholding — Approved Estimates').waitFor({timeout:10000});
+    await page.getByText('Projected Net Only — Not Final',{exact:false}).waitFor({timeout:10000});
+    await page.getByText('$806.00',{exact:false}).first().waitFor({timeout:10000});
+    await page.getByText('No Payment Authorized',{exact:true}).waitFor({timeout:10000});
+    await page.getByText('Federal income withholding').waitFor({timeout:10000});
+    console.log('PASS: approved employee-only federal/Ohio/Toledo withholding projections remain not payable');
+
     await page.getByText('Pioneer Books — Gross Wage Accruals').waitFor({timeout:10000});
     await page.getByText('Not Marked Paid').first().waitFor({timeout:10000});
     console.log('PASS: existing gross accrual remains separate from external provider pay');
