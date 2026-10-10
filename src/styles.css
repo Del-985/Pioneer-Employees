@@ -397,3 +397,16 @@ h1, h2, h3 { letter-spacing: -0.03em; }
  .time-clock-actions {display:grid;grid-template-columns:1fr 1fr}
  .time-clock-actions .button:last-child {grid-column:1/-1}
 }
+
+/* v0.4 - employee read-only gross wage record */
+.gross-pay-page .alert-info {margin:14px 0 21px;line-height:1.7}
+.gross-pay-business {max-width:350px;margin-bottom:24px}
+.gross-pay-list {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr));gap:18px}
+.gross-pay-list .content-card {margin:0}
+.gross-pay-gross {font-size:clamp(1.8rem,4vw,2.5rem);font-weight:800;letter-spacing:-.04em;color:#1f3c5a;margin:19px 0;display:grid;gap:3px}
+.gross-pay-gross small {font-size:.75rem;letter-spacing:0;color:#748496;font-weight:700;text-transform:uppercase}
+.gross-pay-breakdown {display:grid;gap:12px;border-top:1px solid #e4eaf0;padding-top:20px}
+.gross-pay-breakdown div {display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:.82rem}
+.gross-pay-breakdown span {color:#708096}
+.gross-pay-breakdown strong {font-variant-numeric:tabular-nums;color:#2c4158}
+@media(max-width:600px){.gross-pay-list{grid-template-columns:1fr}}
