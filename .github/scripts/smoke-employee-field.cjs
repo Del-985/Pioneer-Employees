@@ -123,7 +123,7 @@ async function run(){
     await page.getByText('not bank-verified',{exact:false}).first().waitFor({timeout:10000});
     console.log('PASS: external provider-reported net pay, withheld amounts and unverified payment status');
     await page.getByText('Pioneer Books — Gross Wage Accruals').waitFor({timeout:10000});
-    await page.getByText('Not Marked Paid').waitFor({timeout:10000});
+    await page.getByText('Not Marked Paid').first().waitFor({timeout:10000});
     console.log('PASS: existing gross accrual remains separate from external provider pay');
     await page.getByText('Overnight snow work bonus').waitFor({timeout:10000});
     await page.getByText('Driveway salt reimbursement').waitFor({timeout:10000});
