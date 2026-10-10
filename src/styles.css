@@ -439,3 +439,13 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .gross-pay-provider h3{font-size:1rem;margin:5px 0}
 .gross-pay-provider .gross-pay-breakdown>div strong{font-variant-numeric:tabular-nums}
 .gross-pay-provider .content-card>.muted{font-size:.76rem;line-height:1.6;margin-top:13px}
+
+/* v0.4.3 native earnings calculation previews, always unpaid / untaxed */
+.gross-pay-native{display:grid;gap:13px;margin:21px 0 30px}
+.gross-pay-native h2{margin:0}
+.gross-pay-native>.muted{margin:0;line-height:1.7}
+.gross-pay-native .content-card{margin:0;min-width:0}
+.gross-pay-native .field-section-heading{align-items:start;gap:12px;flex-wrap:wrap}
+.gross-pay-native .field-section-heading h3{margin:7px 0;font-size:1.02rem}
+.gross-pay-native .gross-pay-breakdown strong{font-variant-numeric:tabular-nums}
+.gross-pay-native .content-card>.muted{margin-top:14px;font-size:.78rem;line-height:1.65}
