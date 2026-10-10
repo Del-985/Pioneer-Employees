@@ -1,6 +1,7 @@
-import { useCallback,useEffect,useMemo,useState } from 'react';
+import { useCallback,useEffect,useMemo,useState,useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { apiRequest } from './lib/api.js';
+import { apiRequest, API_BASE_URL } from './lib/api.js';
+import { prepareFieldPhoto } from './lib/photo.js';
 
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const statusLabel={assigned:'Assigned',acknowledged:'Acknowledged',in_progress:'In Progress',
@@ -11,7 +12,7 @@ const fmt=(value)=>value?new Intl.DateTimeFormat('en-US',{
 }).format(new Date(value)):'Not Scheduled';
 const workUnit=(profile)=>profile.employment?.[0]?.businessUnitId||'';
 const errText=(err)=>err instanceof Error?err.message:'Unable to complete this operation.';
-const FileSizeLimit=10*1024*1024;
+const photoUrl=(url)=>url?.startsWith('/')?API_BASE_URL+url:url;
 function Notice({error,success}){
  return <>{error&&<p className="alert alert-error" role="alert">{error}</p>}
  {success&&<p className="alert alert-success" role="status">{success}</p>}</>;
@@ -27,6 +28,8 @@ export function FieldJobActions({job,onChanged}){
  const [amount,setAmount]=useState('');
  const [kind,setKind]=useState('before');
  const [file,setFile]=useState(null);
+ const photoInput=useRef(null);
+ const [uploadStage,setUploadStage]=useState('');
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [success,setSuccess]=useState('');
@@ -66,23 +69,44 @@ export function FieldJobActions({job,onChanged}){
    }catch(e){setError(errText(e));}finally{setBusy(false);}
  }
  async function uploadPhoto(event){
-   event.preventDefault();if(!file)return;
-   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>FileSizeLimit){
-     setError('Use a JPEG, PNG, or WebP image no larger than 10 MB.');return;
-   }
+   event.preventDefault();
+   if(!file)return;
    setBusy(true);setError('');setSuccess('');
-   try{
+   try {
+     setUploadStage('Preparing photo…');
+     const prepared=await prepareFieldPhoto(file);
+     setUploadStage('Requesting upload…');
      const intent=await apiRequest('/api/employee/jobs/'+job.id+'/photos/upload-intent',{
-       method:'POST',body:JSON.stringify({kind,fileName:file.name,contentType:file.type,byteSize:file.size})
+       method:'POST',
+       body:JSON.stringify({
+         kind,fileName:prepared.name,contentType:prepared.type,byteSize:prepared.size
+       })
      });
-     const upload=await fetch(intent.data.uploadUrl,{method:'PUT',
-       headers:{'Content-Type':file.type},body:file});
-     if(!upload.ok)throw new Error('Object storage rejected this photo. Confirm that bucket CORS allows uploads from the employee portal.');
-     await apiRequest('/api/employee/photos/'+intent.data.id+'/complete',{method:'POST'});
-     setFile(null);event.currentTarget?.reset?.();
+     const destination=intent.data;
+     setUploadStage('Uploading photo…');
+     if(destination.storageProvider==='database'){
+       if(!destination.uploadPath)throw new Error('The photo upload destination was not provided.');
+       await apiRequest(destination.uploadPath,{
+         method:'POST',
+         headers:{'Content-Type':'application/octet-stream'},
+         body:prepared,
+       });
+     }else if(destination.storageProvider==='object_storage' && destination.uploadUrl){
+       const response=await fetch(destination.uploadUrl,{
+         method:'PUT',headers:{'Content-Type':prepared.type},body:prepared
+       });
+       if(!response.ok)throw new Error('Photo storage rejected the upload. Ask your manager to check storage permissions.');
+     }else{
+       throw new Error('This upload destination is not supported. Refresh the page and retry.');
+     }
+     setUploadStage('Confirming photo…');
+     await apiRequest('/api/employee/photos/'+destination.id+'/complete',{method:'POST'});
+     setFile(null);
+     if(photoInput.current)photoInput.current.value='';
      await load();
-     setSuccess('Photo added to the job report.');
-   }catch(e){setError(errText(e));}finally{setBusy(false);}
+     setSuccess('Photo uploaded. Your manager can view it from the job report.');
+   }catch(e){setError(errText(e));}
+   finally{setBusy(false);setUploadStage('');}
  }
  return <section className="content-card detail-wide field-workflow">
    <div className="field-section-heading"><div><h2>Field Report</h2>
@@ -115,22 +139,22 @@ export function FieldJobActions({job,onChanged}){
    <div className="field-photo-section">
      <h3>Job Photographs</h3>
      {photos.length>0&&<div className="field-photos">{photos.map(photo=>
-       <a className="field-photo" href={photo.downloadUrl} key={photo.id} target="_blank" rel="noopener noreferrer">
-         <img loading="lazy" src={photo.downloadUrl} alt={photo.kind+' photo for '+job.title}/>
+       <a className="field-photo" href={photoUrl(photo.downloadUrl)} key={photo.id} target="_blank" rel="noopener noreferrer">
+         <img loading="lazy" src={photoUrl(photo.downloadUrl)} alt={photo.kind+' photo for '+job.title}/>
          <span>{photo.kind==='before'?'Before':photo.kind==='after'?'After':'Issue'}</span>
        </a>
      )}</div>}
      {!photos.length&&<p className="muted">No photographs have been uploaded for this job.</p>}
-     {!photoEnabled&&<p className="alert alert-info">Photo uploads are not enabled for this business yet. Your work notes will still be submitted normally.</p>}
+     {!photoEnabled&&<p className="alert alert-info">Checking photo storage availability. If this message remains, refresh or ask your manager.</p>}
      {!locked&&photoEnabled&&<form className="field-photo-upload" onSubmit={uploadPhoto}>
        <label className="field"><span>Photo Type</span><select value={kind} onChange={e=>setKind(e.target.value)}>
          <option value="before">Before</option><option value="after">After</option><option value="issue">Issue</option>
        </select></label>
-       <label className="field"><span>Select Photo (10 MB max)</span>
-         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
-       <button className="button button-outline" type="submit" disabled={busy||!file}>Upload Photo</button>
+       <label className="field"><span>Choose or Take Photo</span>
+         <input ref={photoInput} type="file" accept="image/*,.heic,.heif" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
+       <button className="button button-outline" type="submit" disabled={busy||!file}>{busy ? (uploadStage||"Uploading…") : "Upload Photo"}</button>
      </form>}
-     <p className="muted footnote">Images are stored securely through Pioneer object storage. Photos are limited to 10 MB each.</p>
+     <p className="muted footnote">JPEG, PNG, WebP and supported iPhone camera photos. Large images are resized to conserve mobile data. Files are private and limited to 10 MB after preparation.</p>
    </div>
  </section>;
 }
