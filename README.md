@@ -2,9 +2,51 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
+## v0.4.2 — Payroll provider export and imported pay records
+
+Pioneer Admin → **Payroll → Payroll Provider** is the controlled handoff between
+approved Pioneer timekeeping/posted wage estimates and an external payroll service.
+This phase implements **manual CSV export/import** and provider-reference tracking,
+not a direct vendor API connection or in-app wage disbursement.
+
+1. Complete manager approval and post the gross wage register in Pioneer Books.
+2. Select that posted register, identify your external provider and prepare the export.
+3. Download a CSV of employee IDs, approved hours and estimated gross wages; transmit
+   it to the provider using the provider's own website or secure workflow.
+4. Record the **actual provider submission date and unique external reference** in Admin.
+   Duplicate references and second submissions for that register are blocked.
+5. Download the **Pioneer results CSV template** and fill it from the actual
+   finalized provider report: integer-cent gross, federal/state withholding,
+   Social Security, Medicare, other deductions, net pay, provider-reported
+   payment status, payment date and optional statement reference.
+6. Preview the complete, employee-matched import; validate that gross = net +
+   deductions; explicitly acknowledge any gross difference; import results once.
+7. Employees see only **their own** imported provider pay amounts, withholding
+   and provider-reported payment status in **My Pay**, displayed separately from
+   the existing unpaid Pioneer Books wage-accrual entries.
+
+The backend stores an immutable import and audit trail with an idempotency key,
+payload fingerprint, employee identity checks, business-unit restrictions and
+permissions (`payroll.provider.read/manage/import`). An external submission must
+be recorded before final provider results can be imported. Imported employee
+payment statuses are **provider-reported, not bank-verified**. These summaries
+are **not official pay stubs**; obtain formal statements from the payroll provider.
+
+**Excluded from v0.4.2:** automated provider API submissions; actual payment
+initiation; payroll-tax calculations/filings; remittance; employer tax liability
+posting; bank reconciliation; and settlement of accrued wages in Pioneer Books.
+Those accounting steps remain in the v0.4.3 roadmap. No Social Security number,
+bank-routing information or direct-deposit details are collected in the CSV
+workflow. Independent employer wage/compliance review remains necessary.
+
+Backend migrations: `053_payroll_provider_bridge.sql` and
+`054_payroll_provider_import_digest.sql`.
+Admin: `https://admin.pioneerlegacyworks.com/payroll/provider`.
+Employee: `https://employee.pioneeroutdoorservices.com/#/pay`.
+
 ## v0.4.1 — Audited Payroll Adjustments & Reimbursements
 
-Admin now provides **Field Operations → Payroll & Books → Adjustments**.
+Admin now provides **Payroll → Adjustments**.
 
 - Document a bonus, retroactive pay difference, positive/negative gross-wage correction,
   or employee expense reimbursement.
@@ -38,7 +80,7 @@ the applicable accountable plan and payroll provider.
 ## v0.4.0 — Gross payroll register and Pioneer Books integration
 
 This release adds a **read-only My Gross Pay** page to the employee portal
-and **Field Operations → Payroll & Books** to Pioneer Admin.
+and **Payroll → Pay Registers** to Pioneer Admin.
 
 - Admin sets hourly rates effective from specified dates, plus a configurable estimated overtime multiplier.
 - Managers generate weekly or biweekly **gross payroll estimates** from manager-approved timesheets only.
@@ -81,7 +123,7 @@ records clock-in and clock-out timestamps.
 - Weeks are **Monday–Sunday in America/Detroit**. Each complete shift is
   attributed to the week in which it started, even if it ends the following day or week.
 
-Management has **Field Operations → Hours & Timesheets** for weekly employee summaries,
+Management has **Payroll → Hours & Timesheets** for weekly employee summaries,
 manager corrections with required reasons, missing-shift creation, missed-clock-out
 closeout, review/approval, and a permanent action history.
 
@@ -137,7 +179,7 @@ To build:
 npm run build
 ```
 
-The API origin is controlled by `VITE_API_BASE_URL`. The built-in production default is `https://api.pioneerlegacyworks.com`. Requests include cookies (`credentials: 'include'`) and never store staff passwords or tokens in browser storage.
+The API origin is controlled by `VITE_API_BASE_URL` (production: `https://api.pioneerlegacyworks.com`). The employee portal uses a short-lived, revocable opaque bearer session on employee-only API routes because iOS Safari can block third-party cookies. It stores the token only in tab-scoped `sessionStorage` (or memory in restricted browser mode); it does not persist passwords in the browser or expose the token to Admin APIs.
 
 ## Publishing GitHub Pages
 
@@ -181,7 +223,14 @@ The API routes are hosted in **Pioneer-Backend**:
 - `POST /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/close` — resolve missed clock-out
 - `POST /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/review` — approve or return time
 - `GET /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/history` — audited actions
-- `GET /api/employee/pay/statements?businessUnitId=…` — employee-only posted gross wage statements
+- `GET /api/employee/pay/statements?businessUnitId=…` — employee-only posted gross wage accruals
+- `GET /api/employee/pay/provider-statements?businessUnitId=…` — employee-only imported provider pay summaries
+- `GET /api/admin/business-units/:businessUnitId/payroll/provider-batches` — restricted provider handoff list
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/provider/prepare` — prepare posted register
+- `GET /api/admin/business-units/:businessUnitId/payroll/runs/:runId/provider` — source/actual batch detail and audit
+- `GET /api/admin/business-units/:businessUnitId/payroll/runs/:runId/provider/export` — sanitized estimated-gross CSV
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/provider/submitted` — record external submission
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/provider/import` — validate and import exact employee results once
 - `GET /api/admin/business-units/:businessUnitId/payroll/rates` / `POST /rates` — restricted hourly rates
 - `GET /api/admin/business-units/:businessUnitId/payroll/accounts` — eligible Books accounts
 - `GET/POST /api/admin/business-units/:businessUnitId/payroll/runs` — list/prepare period registers
@@ -190,7 +239,7 @@ The API routes are hosted in **Pioneer-Backend**:
 - `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/post` — balanced Books wage accrual
 - `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/void` — release unposted register
 - `GET /api/admin/business-units/:businessUnitId/payroll/labor-costs` — posted job-linked gross labor
-- Existing `/api/auth/login`, `/api/auth/logout`, `/api/auth/password/reset/request`, `/api/auth/password/reset`, and `/api/auth/password/change` routes remain the authentication system.
+- Employee-only `/api/employee/session/login`, `/api/employee/session/logout`, and `/api/employee/session/password/change` use a narrowly scoped revocable employee session. Platform auth and password recovery endpoints remain available separately.
 
 Backend production environment variables:
 
