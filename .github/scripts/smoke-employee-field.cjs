@@ -72,6 +72,14 @@ async function run(){
             description:'Driveway salt reimbursement',serviceDate:'2026-10-08',
             paymentStatus:'not_recorded',grossWageImpactCents:0,reimbursementCents:1250},
         ]};
+      }else if(path==='/api/employee/pay/native-preview'){
+        result={data:[{calculationId:'native-snapshot-mock',
+          periodStart:'2026-09-28',periodEnd:'2026-10-05',
+          approvedAt:'2026-10-10T12:00:00Z',regularCents:80000,
+          overtimeCents:15000,wageAdjustmentsCents:5000,
+          grossWagesCents:100000,voluntaryDeductionsCents:2000,
+          reimbursementCents:1250,taxWithholdingCents:null,netPayCents:null,
+          taxStatus:'not_calculated',paymentStatus:'not_processed'}]};
       }else if(path==='/api/employee/pay/provider-statements'){
         result={data:[{batchId:'provider-batch-one',providerName:'Example Payroll Provider',
           periodStart:'2026-09-28',periodEnd:'2026-10-05',
@@ -122,6 +130,12 @@ async function run(){
     await page.getByText('Provider reported paid',{exact:false}).first().waitFor({timeout:10000});
     await page.getByText('not bank-verified',{exact:false}).first().waitFor({timeout:10000});
     console.log('PASS: external provider-reported net pay, withheld amounts and unverified payment status');
+    await page.getByText('Pioneer Native Earnings — Approved Previews').waitFor({timeout:10000});
+    await page.getByText('$1,000.00',{exact:false}).first().waitFor({timeout:10000});
+    await page.getByText('Taxes Pending',{exact:false}).first().waitFor({timeout:10000});
+    await page.getByText('Not Payable',{exact:true}).first().waitFor({timeout:10000});
+    await page.getByText('Tax withholding').first().waitFor({timeout:10000});
+    console.log('PASS: employees see only approved untaxed native earnings previews, never payable net wages');
     await page.getByText('Pioneer Books — Gross Wage Accruals').waitFor({timeout:10000});
     await page.getByText('Not Marked Paid').first().waitFor({timeout:10000});
     console.log('PASS: existing gross accrual remains separate from external provider pay');
