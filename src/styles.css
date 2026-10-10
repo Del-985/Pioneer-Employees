@@ -410,3 +410,13 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .gross-pay-breakdown span {color:#708096}
 .gross-pay-breakdown strong {font-variant-numeric:tabular-nums;color:#2c4158}
 @media(max-width:600px){.gross-pay-list{grid-template-columns:1fr}}
+
+/* v0.4.1 payroll adjustment and expense reimbursement records */
+.gross-pay-adjustments {display:grid;gap:14px;margin:28px 0}
+.gross-pay-adjustments h2 {margin:0}
+.gross-pay-adjustments>.muted {line-height:1.6;margin-bottom:6px}
+.gross-adjustment {margin:0}
+.gross-adjustment h3 {font-size:1.05rem;margin:8px 0;line-height:1.4}
+.gross-adjustment .field-section-heading {margin-bottom:12px}
+.gross-pay-adjustment-amount {font-size:1.2rem;color:#24425c;font-variant-numeric:tabular-nums}
+.gross-adjustment>p {font-size:.78rem}
