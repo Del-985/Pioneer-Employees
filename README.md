@@ -2,6 +2,39 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
+## v0.4.1 — Audited Payroll Adjustments & Reimbursements
+
+Admin now provides **Field Operations → Payroll & Books → Adjustments**.
+
+- Document a bonus, retroactive pay difference, positive/negative gross-wage correction,
+  or employee expense reimbursement.
+- A negative wage correction must be linked to the employee's original posted payroll run.
+  Retroactive wage differences may also link to a previous posted run.
+- Every adjustment is **draft → approved → posted**, with permissions checked on the backend.
+  Unposted items may be voided; posted entries cannot be edited or deleted.
+- Posting creates a **separate balanced Pioneer Books journal** and leaves previous
+  payroll runs and their approved clock entries untouched.
+- Bonus / retro-pay / wage corrections accrue to **6200 Gross Wage Expense** and
+  **2150 Gross Wages Payable** (or selected eligible Books accounts).
+- Reimbursements accrue separately to **6210 Employee Reimbursement Expenses** and
+  **2160 Employee Reimbursements Payable**. Reimbursements do not change estimated
+  gross wages, and their correct tax classification still requires independent review.
+- To correct a posted adjustment, use **Reverse Posted Adjustment**. A separate
+  opposite-signed accounting journal is created while preserving the original entry,
+  reason, actor, timestamp and linked transaction history.
+- Employees see only their own **posted** adjustment and reimbursement records,
+  clearly labeled *not paid*. Drafts, pending approvals and other employees' amounts
+  remain restricted. Audit history is manager-only.
+- API supports idempotent creation via a client-generated UUID request key, audited
+  approval, reversal, access isolation, and cross-business account validation.
+- Admin can export a CSV of gross-pay and reimbursement adjustments. CSV export
+  escapes formula-leading employee names.
+
+**Important:** These are bookkeeping accruals, not payroll disbursement or employee
+expense payments. No banking, net-pay, tax-withholding, statutory overtime
+recalculation or tax filing is performed. Reimbursement tax classification depends on
+the applicable accountable plan and payroll provider.
+
 ## v0.4.0 — Gross payroll register and Pioneer Books integration
 
 This release adds a **read-only My Gross Pay** page to the employee portal
@@ -178,7 +211,7 @@ An employee without any active employment records receives 403. Deactivating a p
 ## Next roadmap
 
 v0.3.1–0.3.2 were skipped at the operator's request. Equipment/qualifications and supervisor dashboard improvements remain optional.  
-v0.4.0: gross wage estimates and accounting accrual integration — complete.  
+v0.4.0: gross wage estimates and accounting accrual integration — complete.  \nv0.4.1: audited bonus, retroactive corrections, separate expense reimbursements, and reversal journals — complete.  
 Later: compliant payroll provider integration, verified wage settlement, tax withholding and statutory reports (not implemented).
 
 For timekeeping, dispatch and gross payroll management, open **Pioneer Admin → Field Operations**.
