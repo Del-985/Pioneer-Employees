@@ -9,7 +9,7 @@ const navigation = [
   { to: '/', label: 'Dashboard', symbol: '▦', end: true },
   { to: '/jobs', label: 'My Jobs', symbol: '▤' },
   { to: '/time', label: 'Hours', symbol: '◷' },
-  { to: '/pay', label: 'Gross Pay', symbol: '¢' },
+  { to: '/pay', label: 'My Pay', symbol: '¢' },
   { to: '/schedule', label: 'Schedule', symbol: '▦' },
   { to: '/shifts', label: 'Shifts', symbol: '◷' },
   { to: '/availability', label: 'Availability', symbol: '◴' },
@@ -421,7 +421,7 @@ function Dashboard({ profile, jobs, loading, error, onRefresh }) {
             <Link to="/jobs"><strong>My Jobs</strong><span>Review job details and locations</span><span aria-hidden="true">→</span></Link>
             <Link to="/schedule"><strong>Schedule</strong><span>See when you're assigned</span><span aria-hidden="true">→</span></Link>
             <Link to="/time"><strong>Hours & Time Clock</strong><span>Clock in, record breaks and check timesheets</span><span aria-hidden="true">→</span></Link>
-            <Link to="/pay"><strong>My Gross Pay</strong><span>View wage amounts recorded in Books</span><span aria-hidden="true">→</span></Link>
+            <Link to="/pay"><strong>My Pay</strong><span>View provider results and recorded gross wages</span><span aria-hidden="true">→</span></Link>
             <Link to="/profile"><strong>My Profile</strong><span>View your employee information</span><span aria-hidden="true">→</span></Link>
           </div>
         </section>
