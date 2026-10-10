@@ -2,9 +2,55 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
+## v0.4.3 — Internal native payroll earnings calculation
+
+Pioneer is building payroll for **its own employees only**, not offering payroll
+services to third parties. Admin now has **Payroll → Native Payroll** at
+`https://admin.pioneerlegacyworks.com/payroll/native`.
+
+- Prepare a versioned, employee-by-employee earnings snapshot from an existing
+  gross payroll register built from approved timesheets and effective hourly rates.
+- Review regular wages, estimated overtime (40-hour Monday–Sunday threshold,
+  attributed to the clock-in week), posted bonuses, retroactive corrections,
+  separate expense reimbursements, and documented voluntary deduction estimates.
+- Voluntary deductions are *internal review inputs*, entered per pay period with
+  an effective date, deduction code, authorization record and manager audit trail.
+  The system rejects unauthorised active deductions and deductions exceeding
+  an employee's gross wages. Tax characterization is deferred.
+- Verify the source digest before approval; if the underlying posted adjustments
+  or applicable deductions change, the stale draft cannot be approved.
+  Void the draft with a documented reason and prepare a new calculation.
+- Approved native earnings snapshots are immutable in PostgreSQL, scoped to a
+  legal entity/business unit, and never automatically post a second Pioneer Books
+  journal, execute a payment, or change already approved time records.
+- Employees can see **only their own approved** internal gross-earnings preview in
+  My Pay. Drafts remain hidden and the employee cannot change rates or deductions.
+
+**v0.4.3 is NOT live-payroll capable.** No federal, state, municipal, Social
+Security, Medicare, unemployment or employer tax amounts are calculated.
+All tax fields and net-pay fields remain **null / not calculated**; amounts
+remaining after voluntary deductions are deliberately not called take-home pay.
+Neither checks nor direct deposits can be authorized by this release.
+Statutory overtime and overnight-shift allocations need independent review before
+using these records for actual wages. The planned tax engine is **v0.4.4**.
+
+Backend migration: `055_payroll_native_engine.sql` with the immutable snapshot
+hardening in `056_native_calculation_strict_lock.sql`. API endpoints:
+
+- `GET/POST /api/admin/business-units/:businessUnitId/payroll/native/deductions`
+- `GET /api/admin/business-units/:businessUnitId/payroll/native/calculations`
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/native/prepare`
+- `GET /api/admin/business-units/:businessUnitId/payroll/runs/:runId/native`
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/native/approve`
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/native/void`
+- `GET /api/employee/pay/native-preview?businessUnitId=…` — own approved previews only
+
+The v0.4.2 Payroll Provider CSV section remains available only as an optional
+fallback/legacy handoff; no vendor is required for the native calculation preview.
+
 ## v0.4.2 — Payroll provider export and imported pay records
 
-Pioneer Admin → **Payroll → Payroll Provider** is the controlled handoff between
+Pioneer Admin → **Payroll → Payroll Provider (Legacy)** is the optional controlled handoff between
 approved Pioneer timekeeping/posted wage estimates and an external payroll service.
 This phase implements **manual CSV export/import** and provider-reference tracking,
 not a direct vendor API connection or in-app wage disbursement.
