@@ -89,6 +89,9 @@ async function request(path, options = {}, binary = false) {
       0, 'CONNECTION_ERROR'
     );
   }
+  // HTTP 204/205 responses intentionally contain no body. Some proxies
+  // retain a JSON Content-Type, but parsing an empty body would throw.
+  if (response.ok && (response.status === 204 || response.status === 205)) return null;
   if (response.ok && binary) return response.blob();
 
   const contentType = response.headers.get('content-type') || '';
