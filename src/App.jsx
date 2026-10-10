@@ -557,6 +557,25 @@ function Schedule({ jobs, profile }) {
 }
 
 function Profile({ profile }) {
+  const [employment, setEmployment] = useState(profile.employment);
+  const [loadingEmployment, setLoadingEmployment] = useState(false);
+  const [employmentError, setEmploymentError] = useState('');
+
+  const refreshEmployment = useCallback(async () => {
+    setLoadingEmployment(true);
+    setEmploymentError('');
+    try {
+      const response = await apiRequest('/api/employee/me');
+      setEmployment(response.data?.employment || []);
+    } catch (cause) {
+      setEmploymentError(cause instanceof Error ? cause.message :
+        'Your latest pay rate could not be refreshed.');
+    } finally {
+      setLoadingEmployment(false);
+    }
+  }, []);
+
+  useEffect(() => { void refreshEmployment(); }, [refreshEmployment]);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -591,14 +610,36 @@ function Profile({ profile }) {
           <p className="muted">To correct your email address or contact information, contact your manager.</p>
         </section>
         <section className="content-card">
-          <h2>Employment</h2>
-          {profile.employment.map((entry) => (
+          <div className="profile-employment-heading">
+            <h2>Employment</h2>
+            <button type="button" className="button button-outline"
+              disabled={loadingEmployment}
+              onClick={() => void refreshEmployment()}>
+              {loadingEmployment ? 'Refreshing…' : 'Refresh Pay Rate'}
+            </button>
+          </div>
+          {employmentError && <p role="alert" className="alert alert-error">
+            Could not refresh your latest employment information: {employmentError}
+          </p>}
+          {employment.map((entry) => (
             <dl className="details" key={entry.id}>
               <div><dt>Business</dt><dd>{entry.businessName}</dd></div>
               <div><dt>Position</dt><dd>{entry.jobTitle || 'Employee'}</dd></div>
               {entry.employeeNumber && <div><dt>Employee Number</dt><dd>{entry.employeeNumber}</dd></div>}
               {entry.phone && <div><dt>Phone</dt><dd>{entry.phone}</dd></div>}
               {entry.hireDate && <div><dt>Hire Date</dt><dd>{new Date(entry.hireDate + 'T12:00:00').toLocaleDateString()}</dd></div>}
+              <div className="profile-hourly-rate">
+                <dt>Current Hourly Rate</dt>
+                <dd>{entry.payRate
+                  ? <><strong>{new Intl.NumberFormat('en-US', {
+                      style: 'currency', currency: 'USD',
+                    }).format(entry.payRate.hourlyCents / 100)}/hour</strong>
+                    <span className="profile-pay-effective">
+                      Effective {new Date(entry.payRate.effectiveOn + 'T12:00:00').toLocaleDateString('en-US')}
+                    </span></>
+                  : <span className="muted">Not set — ask your manager.</span>}
+                </dd>
+              </div>
             </dl>
           ))}
         </section>
