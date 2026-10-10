@@ -9,7 +9,7 @@ const navigation = [
   { to: '/', label: 'Dashboard', symbol: '▦', end: true },
   { to: '/jobs', label: 'My Jobs', symbol: '▤' },
   { to: '/time', label: 'Hours', symbol: '◷' },
-  { to: '/pay', label: 'Gross Pay', symbol: '
+  { to: '/pay', label: 'Gross Pay', symbol: '¢' },
   { to: '/schedule', label: 'Schedule', symbol: '▦' },
   { to: '/shifts', label: 'Shifts', symbol: '◷' },
   { to: '/availability', label: 'Availability', symbol: '◴' },
