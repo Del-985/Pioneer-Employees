@@ -60,6 +60,12 @@ async function run(){
         result={data:[{id:shiftId,title:'Overnight Snow Shift',status:'open',
           startsAt:'2026-12-01T01:00:00Z',endsAt:'2026-12-01T08:00:00Z',
           capacity:2,acceptedCount:0,offers:[{id:'offer',employeeId,status:'offered'}]}]};
+      }else if(path==='/api/employee/pay/statements'){
+        result={data:[{runId:'77777777-7777-4777-8777-777777777777',
+          periodStart:'2026-09-28',periodEnd:'2026-10-05',
+          grossCents:95000,regularSeconds:144000,overtimeSeconds:18000,
+          regularCents:80000,overtimeCents:15000,
+          status:'recorded_in_books',paymentStatus:'not_recorded',netPay:null}]};
       }else if(path==='/api/employee/routes'){
         result={data:[{id:'route',name:'North Toledo',status:'planned',notes:'Overnight route',
           startsAt:'2026-12-01T03:00:00Z',members:[{id:employeeId,name:'Test Employee'}],
@@ -88,6 +94,10 @@ async function run(){
     console.log('PASS: availability saved');
     await visit('shifts','Overnight Snow Shift');
     await visit('routes','North Toledo');
+    await visit('pay','My Gross Pay');
+    await page.getByText('$950.00',{exact:false}).first().waitFor({timeout:10000});
+    await page.getByText('not pay stubs or confirmation of payment',{exact:false}).first().waitFor({timeout:10000});
+    console.log('PASS: employee gross payroll statements never assert payment');
     await visit('profile','My Profile');
     if(errors.length)throw new Error('Uncaught browser errors: '+JSON.stringify(errors));
     console.log('PASS: employee v0.2 authenticated browser smoke test');
