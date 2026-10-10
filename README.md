@@ -2,6 +2,37 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
+## v0.4.0 — Gross payroll register and Pioneer Books integration
+
+This release adds a **read-only My Gross Pay** page to the employee portal
+and **Field Operations → Payroll & Books** to Pioneer Admin.
+
+- Admin sets hourly rates effective from specified dates, plus a configurable estimated overtime multiplier.
+- Managers generate weekly or biweekly **gross payroll estimates** from manager-approved timesheets only.
+- Payroll estimates count approved hours across linked employees in the same legal entity when applying a
+  Monday–Sunday 40-hour calculation threshold; this remains an estimate because overnight shifts and
+  break totals originate from time entries rather than a legally certified payroll engine.
+- Payroll must be explicitly **approved** before being posted.
+- Posting creates exactly one balanced journal in Pioneer Books:
+  debit **6200 Gross Wage Expense** and credit **2150 Gross Wages Payable**
+  (or an appropriate selected account pair), scoped to the business unit and legal entity.
+- Admin can export a CSV of gross wage estimates and review posted **job-linked gross labor costs**.
+- Employees see only their own **posted gross wage accruals**, not other workers' pay data.
+- A draft or unposted-approved register can be voided so corrections can be made; posted runs are immutable.
+- The backend protects time entries included in payroll and prevents double-posting.
+
+**Important:** This is a gross-wage accrual and bookkeeping workflow, **not** a full payroll processor.
+It does **not** calculate employee or employer taxes, legally certify overtime, issue checks, initiate
+direct deposit, create final net pay, file returns, or record that anyone has been paid.
+Use a compliant payroll provider and verify applicable wage and tax obligations before actual payment.
+Posting the journal **does not reduce the business checking account**. Record wage settlement and
+withholding separately through a configured payroll process and Pioneer Books.
+
+Configuration: migration `049_payroll_registers.sql` establishes restricted payroll rates and
+runs; migration `050_payroll_books_accounts.sql` seeds the two recommended accounts for
+existing legal entities. Managers need `payroll.read/manage/approve/post` and
+`bookkeeping.post` to post accruals.
+
 ## v0.3.0 — Hours and timekeeping
 
 Pioneer Employees now includes **Hours & Time Clock**. The backend, not the phone,
@@ -54,7 +85,7 @@ uploads instead. The employee and manager portals work with either option.
 - Active-employee and assigned-work authorization enforced **by the backend**, not the browser
 - Mobile-first navigation and layouts
 
-The portal intentionally excludes payroll processing, customer billing and access to unrelated employee/customer records. Those belong to later milestones.
+The portal intentionally excludes actual wage disbursement, tax withholding and customer billing, and never gives employees access to unrelated wage or customer records.
 
 ## Getting started
 
@@ -117,6 +148,15 @@ The API routes are hosted in **Pioneer-Backend**:
 - `POST /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/close` — resolve missed clock-out
 - `POST /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/review` — approve or return time
 - `GET /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/history` — audited actions
+- `GET /api/employee/pay/statements?businessUnitId=…` — employee-only posted gross wage statements
+- `GET /api/admin/business-units/:businessUnitId/payroll/rates` / `POST /rates` — restricted hourly rates
+- `GET /api/admin/business-units/:businessUnitId/payroll/accounts` — eligible Books accounts
+- `GET/POST /api/admin/business-units/:businessUnitId/payroll/runs` — list/prepare period registers
+- `GET /api/admin/business-units/:businessUnitId/payroll/runs/:runId` — immutable detailed snapshot
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/approve` — manager approval
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/post` — balanced Books wage accrual
+- `POST /api/admin/business-units/:businessUnitId/payroll/runs/:runId/void` — release unposted register
+- `GET /api/admin/business-units/:businessUnitId/payroll/labor-costs` — posted job-linked gross labor
 - Existing `/api/auth/login`, `/api/auth/logout`, `/api/auth/password/reset/request`, `/api/auth/password/reset`, and `/api/auth/password/change` routes remain the authentication system.
 
 Backend production environment variables:
@@ -137,7 +177,8 @@ An employee without any active employment records receives 403. Deactivating a p
 
 ## Next roadmap
 
-v0.3.1–0.3.4: onboarding, safety checklists, incident reports, equipment checkout, and broader personnel management.  
-v0.4: payroll calculation and bookkeeping integration from manager-approved time.
+v0.3.1–0.3.2 were skipped at the operator's request. Equipment/qualifications and supervisor dashboard improvements remain optional.  
+v0.4.0: gross wage estimates and accounting accrual integration — complete.  
+Later: compliant payroll provider integration, verified wage settlement, tax withholding and statutory reports (not implemented).
 
-For timekeeping and field dispatch management, open **Pioneer Admin → Field Operations → Hours & Timesheets**.
+For timekeeping, dispatch and gross payroll management, open **Pioneer Admin → Field Operations**.
