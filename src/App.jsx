@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
 import { ApiError, apiRequest } from './lib/api.js';
 import { FieldJobActions, AvailabilityPage, ShiftOffersPage, CrewRoutesPage } from './FieldOperations.jsx';
+import TimekeepingPage from './Timekeeping.jsx';
 
 const navigation = [
   { to: '/', label: 'Dashboard', symbol: '▦', end: true },
   { to: '/jobs', label: 'My Jobs', symbol: '▤' },
+  { to: '/time', label: 'Hours', symbol: '◷' },
   { to: '/schedule', label: 'Schedule', symbol: '▦' },
   { to: '/shifts', label: 'Shifts', symbol: '◷' },
   { to: '/availability', label: 'Availability', symbol: '◴' },
@@ -385,6 +387,7 @@ function Dashboard({ profile, jobs, loading, error, onRefresh }) {
           <div className="quick-links">
             <Link to="/jobs"><strong>My Jobs</strong><span>Review job details and locations</span><span aria-hidden="true">→</span></Link>
             <Link to="/schedule"><strong>Schedule</strong><span>See when you're assigned</span><span aria-hidden="true">→</span></Link>
+            <Link to="/time"><strong>Hours & Time Clock</strong><span>Clock in, record breaks and check timesheets</span><span aria-hidden="true">→</span></Link>
             <Link to="/profile"><strong>My Profile</strong><span>View your employee information</span><span aria-hidden="true">→</span></Link>
           </div>
         </section>
@@ -664,6 +667,7 @@ function PortalShell({ profile, logout }) {
             <Route path="/jobs" element={<Jobs jobs={jobs} loading={loading} error={error} onRefresh={loadJobs} />} />
             <Route path="/jobs/:jobId" element={<JobDetail jobs={jobs} loading={loading} onChanged={loadJobs} />} />
             <Route path="/schedule" element={<Schedule jobs={jobs} profile={profile} />} />
+            <Route path="/time" element={<TimekeepingPage profile={profile} />} />
             <Route path="/shifts" element={<ShiftOffersPage profile={profile} />} />
             <Route path="/availability" element={<AvailabilityPage profile={profile} />} />
             <Route path="/routes" element={<CrewRoutesPage profile={profile} />} />
