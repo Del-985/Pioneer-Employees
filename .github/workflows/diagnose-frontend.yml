@@ -32,6 +32,8 @@ jobs:
           gh api repos/${{ github.repository }}/pages --jq '{custom_domain: .cname, https_enforced: .https_enforced, certificate: .https_certificate.state}' || true
       - name: Inspect production and local application in Chrome
         run: node .github/scripts/diagnose-frontend.cjs
+      - name: Smoke test login when Safari blocks the session cookie
+        run: node .github/scripts/smoke-cookieblocked-login.cjs
       - name: Smoke test employee v0.2 actions with mocked staff session
         run: node .github/scripts/smoke-employee-field.cjs
       - name: Smoke test photo uploads and gallery
