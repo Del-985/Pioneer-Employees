@@ -26,8 +26,12 @@ Calculation and verification steps:
    **2026 IRS Pub. 15-T Automated Percentage Method Worksheet 1A**;
    employee/employer Social Security at 6.2%, Medicare at 1.45%, and
    employee Additional Medicare at 0.9% over the $200,000 YTD threshold;
-   Ohio's **Optional Computer Formula effective Aug 1, 2026**; Toledo's
-   2.5% withholding; and verified earned-income-base school districts.
+   Ohio's **Optional Computer Formula effective Aug 1, 2026** for
+   regular wages and the separate **2.75% supplemental withholding rate**
+   for identifiable bonuses and retroactive pay; Toledo's 2.5% withholding;
+   and verified earned-income-base school districts.
+   Nonzero posted wage corrections require independent tax classification
+   before using the automatic preview.
 5. Review gross wages, federal/Ohio/Toledo/district tax, FICA, authorized
    voluntary deductions, reimbursements, and **projected** net.
    Gross wages and voluntary deductions do not automatically establish
