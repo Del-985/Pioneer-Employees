@@ -352,3 +352,48 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 
 .schedule-shifts {margin-top:24px}
 .schedule-shifts .schedule-item:last-child {margin-bottom:0}
+
+/* v0.3.0 — employee time clock and weekly timesheet */
+.timekeeping-page .time-clock-grid {display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:20px;margin:22px 0}
+.timekeeping-page .time-business-select {max-width:350px;margin-bottom:18px}
+.timekeeping-page .time-clock-card {min-height:330px}
+.timekeeping-page .time-clock-card .field-section-heading {align-items:center}
+.timekeeping-page .time-clock-card .field-section-heading h2 {margin:0}
+.time-clock-in-form {display:grid;gap:16px}
+.time-clock-in-form p {margin:0}
+.time-clock-active {display:grid;gap:13px}
+.time-live-label {font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;font-weight:750;color:#67788c}
+.time-live-value {color:#193956;font-size:clamp(2.4rem,4vw,3.3rem);letter-spacing:-.045em;line-height:1.05;font-variant-numeric:tabular-nums}
+.time-live-value small {font-size:1rem;color:#6c7d8f;letter-spacing:0}
+.time-clock-actions {display:flex;align-items:stretch;flex-wrap:wrap;gap:11px;margin-top:8px}
+.time-clock-actions button {flex:1 1 165px}
+.time-clock-active .footnote {margin:0}
+.time-stat-stack {display:grid;gap:3px}
+.time-stat-stack>div {display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #eef0f4}
+.time-stat-stack>div span {font-size:.83rem;color:#6c7b8c}
+.time-stat-stack>div strong {color:#263e58;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.time-card-link {display:inline-block;margin-top:17px;font-weight:750;font-size:.86rem;color:#906826;text-decoration:none}
+.time-week-section {margin-top:8px}
+.time-week-heading {display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:15px;margin-bottom:23px}
+.time-week-heading h2 {margin-bottom:6px}
+.time-week-heading p {margin-bottom:0}
+.time-week-controls {display:flex;gap:7px;flex-wrap:wrap}
+.time-entry-list {display:grid;gap:11px}
+.time-entry {border:1px solid #e3e9f0;border-radius:10px;padding:19px 20px;background:#fafbfc}
+.time-entry-top {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.time-entry-top>strong {color:#293f58;font-size:.91rem}
+.time-entry>p {font-size:.81rem;color:#66788b;margin:10px 0}
+.time-entry-meta {display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem;color:#758394}
+.time-entry-meta strong {color:#33485e}
+.time-warning {color:#a75d2f}
+.time-entry .time-review-note {color:#8f5e24;background:#fff6e9;padding:10px;border-radius:7px}
+.time-week-section>.footnote {margin-top:20px}
+@media (max-width:1050px) {.timekeeping-page .time-clock-grid {grid-template-columns:1fr}}
+@media (max-width:600px) {
+ .timekeeping-page .time-clock-grid {gap:13px}
+ .time-week-controls {width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .time-week-controls button {white-space:normal;font-size:.72rem;padding:.5rem}
+ .time-entry {padding:15px}
+ .time-clock-actions {display:grid;grid-template-columns:1fr 1fr}
+ .time-clock-actions .button:last-child {grid-column:1/-1}
+}
