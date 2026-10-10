@@ -23,3 +23,7 @@ jobs:
         run: npm install
       - name: Build employee portal
         run: npm run build
+      - name: Install browser test driver
+        run: npm install --no-save playwright
+      - name: Smoke test cookie-blocked employee login
+        run: node .github/scripts/smoke-cookieblocked-login.cjs
