@@ -60,6 +60,15 @@ async function run(){
         result={data:[{id:shiftId,title:'Overnight Snow Shift',status:'open',
           startsAt:'2026-12-01T01:00:00Z',endsAt:'2026-12-01T08:00:00Z',
           capacity:2,acceptedCount:0,offers:[{id:'offer',employeeId,status:'offered'}]}]};
+      }else if(path==='/api/employee/pay/adjustments'){
+        result={data:[
+          {id:'adjustment-bonus',category:'bonus',amountCents:5000,
+            description:'Overnight snow work bonus',serviceDate:'2026-10-08',
+            paymentStatus:'not_recorded',grossWageImpactCents:5000,reimbursementCents:0},
+          {id:'adjustment-expense',category:'reimbursement',amountCents:1250,
+            description:'Driveway salt reimbursement',serviceDate:'2026-10-08',
+            paymentStatus:'not_recorded',grossWageImpactCents:0,reimbursementCents:1250},
+        ]};
       }else if(path==='/api/employee/pay/statements'){
         result={data:[{runId:'77777777-7777-4777-8777-777777777777',
           periodStart:'2026-09-28',periodEnd:'2026-10-05',
@@ -98,6 +107,10 @@ async function run(){
     await page.getByText('$950.00',{exact:false}).first().waitFor({timeout:10000});
     await page.getByText('not pay stubs or confirmation of payment',{exact:false}).first().waitFor({timeout:10000});
     console.log('PASS: employee gross payroll statements never assert payment');
+    await page.getByText('Overnight snow work bonus').waitFor({timeout:10000});
+    await page.getByText('Driveway salt reimbursement').waitFor({timeout:10000});
+    await page.getByText('separate from gross wages',{exact:false}).first().waitFor({timeout:10000});
+    console.log('PASS: employee pay adjustments and expense reimbursements display separately');
     await visit('profile','My Profile');
     if(errors.length)throw new Error('Uncaught browser errors: '+JSON.stringify(errors));
     console.log('PASS: employee v0.2 authenticated browser smoke test');
