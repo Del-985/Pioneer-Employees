@@ -429,3 +429,13 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .profile-hourly-rate dd {display:grid;gap:4px}
 .profile-hourly-rate dd strong {color:#223e59;font-size:1.16rem;font-variant-numeric:tabular-nums}
 .profile-pay-effective {font-size:.74rem;color:#697d91}
+
+/* v0.4.2: separate provider-reported net pay and withheld amounts */
+.gross-pay-provider{display:grid;gap:13px;margin:22px 0 28px}
+.gross-pay-provider h2{margin:0}
+.gross-pay-provider>.muted{line-height:1.65;margin:0}
+.gross-pay-provider .content-card{margin:0;min-width:0}
+.gross-pay-provider .field-section-heading{align-items:start;flex-wrap:wrap;gap:12px}
+.gross-pay-provider h3{font-size:1rem;margin:5px 0}
+.gross-pay-provider .gross-pay-breakdown>div strong{font-variant-numeric:tabular-nums}
+.gross-pay-provider .content-card>.muted{font-size:.76rem;line-height:1.6;margin-top:13px}
