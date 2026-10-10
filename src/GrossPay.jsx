@@ -9,35 +9,70 @@ export default function GrossPayPage({profile}){
   const [unit,setUnit]=useState(profile.employment?.[0]?.businessUnitId||'');
   const [statements,setStatements]=useState([]);
   const [adjustments,setAdjustments]=useState([]);
+  const [providerStatements,setProviderStatements]=useState([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const load=useCallback(async()=>{
     if(!unit)return;
     setBusy(true);
-    try{const [res,adj]=await Promise.all([
+    try{const [res,adj,provider]=await Promise.all([
       apiRequest('/api/employee/pay/statements?businessUnitId='+unit),
       apiRequest('/api/employee/pay/adjustments?businessUnitId='+unit),
+      apiRequest('/api/employee/pay/provider-statements?businessUnitId='+unit),
     ]);
-      setStatements(res.data||[]);setAdjustments(adj.data||[]);setError('');}
+      setStatements(res.data||[]);setAdjustments(adj.data||[]);
+      setProviderStatements(provider.data||[]);setError('');}
     catch(e){setError(e instanceof Error?e.message:'Unable to load pay history.');}
     finally{setBusy(false);}
   },[unit]);
   useEffect(()=>{void load();},[load]);
   return <div className="page-body gross-pay-page">
     <header className="page-heading"><div><span className="eyebrow">Earnings Records</span>
-      <h1>My Gross Pay</h1>
-      <p>View wage amounts recorded in Pioneer Books from approved timekeeping.</p>
+      <h1>My Pay</h1>
+      <p>View payroll provider results alongside Pioneer's recorded wage accruals.</p>
     </div><button type="button" className="button button-outline" onClick={load} disabled={busy}>
       {busy?'Refreshing…':'Refresh'}</button></header>
     <div className="alert alert-info">
-      These are <strong>gross wage estimates recorded as unpaid liabilities</strong>, not pay stubs or confirmation of payment.
-      They do not show tax withholding or net pay. Check your separate payroll provider or pay statement for actual wages paid.
+      <strong>Payroll provider records</strong> below are imported from an external provider
+      and show provider-reported deductions, net pay, and payment status. Pioneer cannot independently verify a bank payment.
+      The original Pioneer Books wage accruals shown separately remain gross estimates, not payment confirmations.
     </div>
     {profile.employment.length>1&&<label className="field gross-pay-business">
       <span>Business</span><select value={unit} onChange={e=>setUnit(e.target.value)}>
         {profile.employment.map(e=><option key={e.id} value={e.businessUnitId}>{e.businessName}</option>)}
       </select></label>}
     {error&&<p className="alert alert-error" role="alert">{error}</p>}
+    <section className="gross-pay-provider">
+      <h2>External Payroll Provider Results</h2>
+      <p className="muted">These summaries reflect reports imported by management from
+        the payroll provider. They are not official provider-issued pay stubs or independent proof of payment.</p>
+      <div className="gross-pay-list">{providerStatements.map(item=><section className="content-card"
+        key={item.batchId}>
+        <div className="field-section-heading">
+          <div><span className="eyebrow">{item.providerName} · Imported Payroll Result</span>
+            <h3>{item.periodStart} – {previousDay(item.periodEnd)}</h3></div>
+          <span className="status-tag">{item.paymentStatus==='paid'?'Provider reported paid':
+            item.paymentStatus==='failed'?'Provider reported failed':'Payment pending'}</span>
+        </div>
+        <div className="gross-pay-gross">{money(item.netCents)} <small>Provider-Reported Net Pay</small></div>
+        <div className="gross-pay-breakdown">
+          <div><span>Gross wages</span><strong>{money(item.grossCents)}</strong></div>
+          <div><span>Federal withholding</span><strong>{money(item.federalWithholdingCents)}</strong></div>
+          <div><span>State withholding</span><strong>{money(item.stateWithholdingCents)}</strong></div>
+          <div><span>Social Security</span><strong>{money(item.socialSecurityCents)}</strong></div>
+          <div><span>Medicare</span><strong>{money(item.medicareCents)}</strong></div>
+          <div><span>Other deductions</span><strong>{money(item.otherDeductionsCents)}</strong></div>
+          <div><span>Net pay</span><strong>{money(item.netCents)}</strong></div>
+          {item.paidOn&&<div><span>Provider-reported payment date</span><strong>{item.paidOn}</strong></div>}
+          {item.statementReference&&<div><span>Provider statement reference</span><strong>{item.statementReference}</strong></div>}
+        </div>
+        <p className="muted">Payment status is provider-reported, not bank-verified.
+          Pioneer Books settlement and tax liability reconciliation are separate.</p>
+      </section>)}</div>
+      {!providerStatements.length&&!busy&&<p className="muted">
+        No external payroll provider results have been imported yet.</p>}
+    </section>
+    <h2>Pioneer Books — Gross Wage Accruals</h2>
     <div className="gross-pay-list">{statements.map(statement=><section className="content-card" key={statement.runId}>
       <div className="field-section-heading">
         <div><span className="eyebrow">Recorded in Pioneer Books</span>
@@ -72,7 +107,7 @@ export default function GrossPayPage({profile}){
       </article>)}
       {!adjustments.length&&!busy&&<p className="muted">No posted pay adjustments yet.</p>}
     </section>
-    {!busy&&!statements.length&&!adjustments.length&&!error&&<div className="empty-state">
+    {!busy&&!statements.length&&!adjustments.length&&!providerStatements.length&&!error&&<div className="empty-state">
       <h3>No gross-pay records yet</h3>
       <p>When management reviews and posts a payroll register, the resulting gross wages appear here.
         Approved hours are available now in your Hours & Time Clock section.</p>
