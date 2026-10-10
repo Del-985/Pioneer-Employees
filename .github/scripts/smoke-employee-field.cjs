@@ -72,6 +72,15 @@ async function run(){
             description:'Driveway salt reimbursement',serviceDate:'2026-10-08',
             paymentStatus:'not_recorded',grossWageImpactCents:0,reimbursementCents:1250},
         ]};
+      }else if(path==='/api/employee/pay/provider-statements'){
+        result={data:[{batchId:'provider-batch-one',providerName:'Example Payroll Provider',
+          periodStart:'2026-09-28',periodEnd:'2026-10-05',
+          grossCents:95000,netCents:70000,
+          federalWithholdingCents:15000,stateWithholdingCents:3000,
+          socialSecurityCents:5000,medicareCents:1000,otherDeductionsCents:1000,
+          paymentStatus:'paid',paidOn:'2026-10-08',statementReference:'EXTERNAL-123',
+          source:'imported_external_provider',paymentVerifiedByPioneer:false,
+          booksSettlementRecorded:false}]};
       }else if(path==='/api/employee/pay/statements'){
         result={data:[{runId:'77777777-7777-4777-8777-777777777777',
           periodStart:'2026-09-28',periodEnd:'2026-10-05',
@@ -106,10 +115,16 @@ async function run(){
     console.log('PASS: availability saved');
     await visit('shifts','Overnight Snow Shift');
     await visit('routes','North Toledo');
-    await visit('pay','My Gross Pay');
+    await visit('pay','My Pay');
     await page.getByText('$950.00',{exact:false}).first().waitFor({timeout:10000});
-    await page.getByText('not pay stubs or confirmation of payment',{exact:false}).first().waitFor({timeout:10000});
-    console.log('PASS: employee gross payroll statements never assert payment');
+    await page.getByText('Provider-Reported Net Pay',{exact:false}).first().waitFor({timeout:10000});
+    await page.getByText('$700.00',{exact:true}).first().waitFor({timeout:10000});
+    await page.getByText('Provider reported paid',{exact:false}).first().waitFor({timeout:10000});
+    await page.getByText('not bank-verified',{exact:false}).first().waitFor({timeout:10000});
+    console.log('PASS: external provider-reported net pay, withheld amounts and unverified payment status');
+    await page.getByText('Pioneer Books — Gross Wage Accruals').waitFor({timeout:10000});
+    await page.getByText('Not Marked Paid').waitFor({timeout:10000});
+    console.log('PASS: existing gross accrual remains separate from external provider pay');
     await page.getByText('Overnight snow work bonus').waitFor({timeout:10000});
     await page.getByText('Driveway salt reimbursement').waitFor({timeout:10000});
     await page.getByText('separate from gross wages',{exact:false}).first().waitFor({timeout:10000});
