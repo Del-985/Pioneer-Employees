@@ -8,13 +8,17 @@ function previousDay(day){const date=new Date(day+'T12:00:00Z');
 export default function GrossPayPage({profile}){
   const [unit,setUnit]=useState(profile.employment?.[0]?.businessUnitId||'');
   const [statements,setStatements]=useState([]);
+  const [adjustments,setAdjustments]=useState([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const load=useCallback(async()=>{
     if(!unit)return;
     setBusy(true);
-    try{const res=await apiRequest('/api/employee/pay/statements?businessUnitId='+unit);
-      setStatements(res.data||[]);setError('');}
+    try{const [res,adj]=await Promise.all([
+      apiRequest('/api/employee/pay/statements?businessUnitId='+unit),
+      apiRequest('/api/employee/pay/adjustments?businessUnitId='+unit),
+    ]);
+      setStatements(res.data||[]);setAdjustments(adj.data||[]);setError('');}
     catch(e){setError(e instanceof Error?e.message:'Unable to load pay history.');}
     finally{setBusy(false);}
   },[unit]);
@@ -48,7 +52,27 @@ export default function GrossPayPage({profile}){
         <div><span>Estimated Overtime Gross</span><strong>{money(statement.overtimeCents)}</strong></div>
       </div>
     </section>)}</div>
-    {!busy&&!statements.length&&!error&&<div className="empty-state">
+    <section className="gross-pay-adjustments">
+      <h2>Posted Pay Adjustments</h2>
+      <p className="muted">Bonuses and retroactive corrections affect accrued gross wages.
+        Reimbursements are shown separately because their tax treatment may differ.
+        These accounting entries do not confirm an actual payment.</p>
+      {adjustments.map(a=><article className="content-card gross-adjustment" key={a.id}>
+        <div className="field-section-heading"><div>
+          <span className="eyebrow">{a.category==='reimbursement'?'Expense Reimbursement':
+            a.category==='bonus'?'Bonus':a.category==='retro_pay'?'Retroactive Pay':'Wage Correction'}</span>
+          <h3>{a.description}</h3>
+          <p className="muted">Service date: {a.serviceDate}</p>
+        </div><strong className="gross-pay-adjustment-amount">{money(a.amountCents)}</strong></div>
+        <p className="muted">{a.reversesAdjustmentId?'Reversal of a prior adjustment. ':
+          a.isReversed?'This adjustment was subsequently reversed. ':''}
+          {a.category==='reimbursement'
+            ?'Expense reimbursement accrual — separate from gross wages.'
+            :'Estimated gross wage adjustment.'} Not marked paid.</p>
+      </article>)}
+      {!adjustments.length&&!busy&&<p className="muted">No posted pay adjustments yet.</p>}
+    </section>
+    {!busy&&!statements.length&&!adjustments.length&&!error&&<div className="empty-state">
       <h3>No gross-pay records yet</h3>
       <p>When management reviews and posts a payroll register, the resulting gross wages appear here.
         Approved hours are available now in your Hours & Time Clock section.</p>
