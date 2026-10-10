@@ -420,3 +420,12 @@ h1, h2, h3 { letter-spacing: -0.03em; }
 .gross-adjustment .field-section-heading {margin-bottom:12px}
 .gross-pay-adjustment-amount {font-size:1.2rem;color:#24425c;font-variant-numeric:tabular-nums}
 .gross-adjustment>p {font-size:.78rem}
+
+/* Current effective hourly rate on the employee's private profile */
+.profile-employment-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.profile-employment-heading h2 {margin:0}
+.profile-employment-heading .button {font-size:.77rem;padding:9px 13px}
+.profile-hourly-rate {border-radius:9px;background:#f5f8fa;border:1px solid #dce6ef;padding:12px 13px;margin-top:8px}
+.profile-hourly-rate dd {display:grid;gap:4px}
+.profile-hourly-rate dd strong {color:#223e59;font-size:1.16rem;font-variant-numeric:tabular-nums}
+.profile-pay-effective {font-size:.74rem;color:#697d91}
