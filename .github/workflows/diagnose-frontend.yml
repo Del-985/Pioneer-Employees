@@ -34,3 +34,5 @@ jobs:
         run: node .github/scripts/diagnose-frontend.cjs
       - name: Smoke test employee v0.2 actions with mocked staff session
         run: node .github/scripts/smoke-employee-field.cjs
+      - name: Smoke test photo uploads and gallery
+        run: node .github/scripts/smoke-field-photos.cjs
