@@ -49,6 +49,7 @@ export default function TimekeepingPage({profile}){
   const [error,setError]=useState('');
   const [success,setSuccess]=useState('');
   const [now,setNow]=useState(Date.now());
+  const [fetchedAt,setFetchedAt]=useState(Date.now());
   const employee=useMemo(()=>profile.employment.find(e=>e.businessUnitId===unit),[profile,unit]);
   const load=useCallback(async()=>{
     if(!unit)return;
@@ -60,6 +61,8 @@ export default function TimekeepingPage({profile}){
         apiRequest('/api/employee/shifts?businessUnitId='+unit),
       ]);
       setTime(t.data);
+      setFetchedAt(Date.now());
+      setNow(Date.now());
       setJobs((j.data||[]).filter(x=>['scheduled','in_progress'].includes(x.status)));
       setShifts((s.data||[]).filter(x=>x.status!=='cancelled'&&
         x.offers?.some(offer=>offer.employeeId===employee?.id&&offer.status==='accepted')));
@@ -73,10 +76,10 @@ export default function TimekeepingPage({profile}){
     return()=>clearInterval(interval);
   },[]);
   const active=time?.activeEntry;
-  const liveSeconds=active?Math.max(0,Math.round((now-new Date(active.clockInAt).getTime())/1000)-
-      (active.unpaidBreakSeconds||0)-
-      (active.breakStartedAt&&!active.breakPaid?
-        Math.max(0,Math.round((now-new Date(active.breakStartedAt).getTime())/1000)):0)):0;
+  // The API's workedSeconds already includes elapsed unpaid-break time at fetch.
+  // Only add time since that snapshot, and do not add time while on an unpaid break.
+  const liveSeconds=active?Math.max(0,(active.workedSeconds||0)+
+    (active.breakStartedAt&&!active.breakPaid?0:Math.max(0,Math.round((now-fetchedAt)/1000)))):0;
 
   async function act(path,body,label){
     setWorking(path);setError('');setSuccess('');
