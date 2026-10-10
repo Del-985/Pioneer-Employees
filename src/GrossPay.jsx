@@ -10,18 +10,21 @@ export default function GrossPayPage({profile}){
   const [statements,setStatements]=useState([]);
   const [adjustments,setAdjustments]=useState([]);
   const [providerStatements,setProviderStatements]=useState([]);
+  const [nativePreviews,setNativePreviews]=useState([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const load=useCallback(async()=>{
     if(!unit)return;
     setBusy(true);
-    try{const [res,adj,provider]=await Promise.all([
+    try{const [res,adj,provider,native]=await Promise.all([
       apiRequest('/api/employee/pay/statements?businessUnitId='+unit),
       apiRequest('/api/employee/pay/adjustments?businessUnitId='+unit),
       apiRequest('/api/employee/pay/provider-statements?businessUnitId='+unit),
+      apiRequest('/api/employee/pay/native-preview?businessUnitId='+unit),
     ]);
       setStatements(res.data||[]);setAdjustments(adj.data||[]);
-      setProviderStatements(provider.data||[]);setError('');}
+      setProviderStatements(provider.data||[]);setNativePreviews(native.data||[]);
+      setError('');}
     catch(e){setError(e instanceof Error?e.message:'Unable to load pay history.');}
     finally{setBusy(false);}
   },[unit]);
@@ -42,6 +45,33 @@ export default function GrossPayPage({profile}){
         {profile.employment.map(e=><option key={e.id} value={e.businessUnitId}>{e.businessName}</option>)}
       </select></label>}
     {error&&<p className="alert alert-error" role="alert">{error}</p>}
+    <section className="gross-pay-native">
+      <h2>Pioneer Native Earnings — Approved Previews</h2>
+      <p className="muted">These are internally reviewed gross earnings calculations.
+        Taxes and final net pay have NOT been calculated, and no payment has been initiated.
+        Approved calculations are not final pay statements.</p>
+      <div className="gross-pay-list">{nativePreviews.map(item=><article className="content-card"
+        key={item.calculationId}>
+        <div className="field-section-heading">
+          <div><span className="eyebrow">Internal Earnings Snapshot · Taxes Pending</span>
+            <h3>{item.periodStart} – {previousDay(item.periodEnd)}</h3></div>
+          <span className="status-tag">Not Payable</span>
+        </div>
+        <div className="gross-pay-gross">{money(item.grossWagesCents)} <small>Gross Earnings Only</small></div>
+        <div className="gross-pay-breakdown">
+          <div><span>Regular wages</span><strong>{money(item.regularCents)}</strong></div>
+          <div><span>Estimated overtime</span><strong>{money(item.overtimeCents)}</strong></div>
+          <div><span>Posted wage adjustments</span><strong>{money(item.wageAdjustmentsCents)}</strong></div>
+          <div><span>Voluntary deduction estimate</span><strong>{money(item.voluntaryDeductionsCents)}</strong></div>
+          <div><span>Separate expense reimbursements</span><strong>{money(item.reimbursementCents)}</strong></div>
+          <div><span>Tax withholding</span><strong>Not calculated</strong></div>
+          <div><span>Net pay</span><strong>Not calculated</strong></div>
+        </div>
+        <p className="muted">This approved snapshot cannot authorize a check or direct deposit.
+          Voluntary deductions are not final tax withholding or take-home pay.</p>
+      </article>)}</div>
+      {!nativePreviews.length&&!busy&&<p className="muted">No approved native earnings previews yet.</p>}
+    </section>
     <section className="gross-pay-provider">
       <h2>External Payroll Provider Results</h2>
       <p className="muted">These summaries reflect reports imported by management from
@@ -107,7 +137,7 @@ export default function GrossPayPage({profile}){
       </article>)}
       {!adjustments.length&&!busy&&<p className="muted">No posted pay adjustments yet.</p>}
     </section>
-    {!busy&&!statements.length&&!adjustments.length&&!providerStatements.length&&!error&&<div className="empty-state">
+    {!busy&&!statements.length&&!adjustments.length&&!providerStatements.length&&!nativePreviews.length&&!error&&<div className="empty-state">
       <h3>No gross-pay records yet</h3>
       <p>When management reviews and posts a payroll register, the resulting gross wages appear here.
         Approved hours are available now in your Hours & Time Clock section.</p>
