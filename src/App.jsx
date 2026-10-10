@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
-import { ApiError, apiRequest } from './lib/api.js';
+import { ApiError, apiRequest, saveEmployeeSession, clearEmployeeSession } from './lib/api.js';
 import { FieldJobActions, AvailabilityPage, ShiftOffersPage, CrewRoutesPage } from './FieldOperations.jsx';
 import TimekeepingPage from './Timekeeping.jsx';
 import GrossPayPage from './GrossPay.jsx';
@@ -77,14 +77,23 @@ function Notice({ children }) {
 
 function usePortalAuth() {
   const [session, setSession] = useState({ status: 'checking', profile: null, error: '' });
+  const authRequestId = useRef(0);
   const refresh = useCallback(async () => {
+    const id = ++authRequestId.current;
     try {
       const response = await apiRequest('/api/employee/me');
+      if (authRequestId.current !== id) return;
+      if (!response.data?.user || !Array.isArray(response.data?.employment)) {
+        throw new Error('The employee profile response was incomplete.');
+      }
       setSession({ status: 'authenticated', profile: response.data, error: '' });
     } catch (error) {
+      if (authRequestId.current !== id) return;
       if (error instanceof ApiError && error.status === 401) {
+        clearEmployeeSession();
         setSession({ status: 'anonymous', profile: null, error: '' });
       } else if (error instanceof ApiError && error.status === 403) {
+        clearEmployeeSession();
         setSession({ status: 'denied', profile: null, error: error.message });
       } else {
         setSession({
@@ -103,17 +112,39 @@ function usePortalAuth() {
   }, [refresh]);
 
   async function login(email, password) {
-    await apiRequest('/api/auth/login', {
+    const id = ++authRequestId.current;
+    const response = await apiRequest('/api/employee/session/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    await refresh();
+    if (authRequestId.current !== id) return;
+    const data = response.data;
+    if (!data?.token || !data?.expiresAt) {
+      throw new Error('Employee login succeeded but no usable session was returned.');
+    }
+    saveEmployeeSession(data.token, data.expiresAt);
+    try {
+      // Verify the same authenticated request the dashboard will use.
+      // This works on Safari even when it discards the API's cookies.
+      const result = await apiRequest('/api/employee/me');
+      if (authRequestId.current !== id) return;
+      if (!result.data?.user || !Array.isArray(result.data?.employment)) {
+        throw new Error('The employee profile response was incomplete.');
+      }
+      setSession({ status: 'authenticated', profile: result.data, error: '' });
+    } catch (error) {
+      clearEmployeeSession();
+      setSession({ status: 'anonymous', profile: null, error: '' });
+      throw error;
+    }
   }
 
   async function logout() {
+    ++authRequestId.current;
     try {
-      await apiRequest('/api/auth/logout', { method: 'POST' });
+      await apiRequest('/api/employee/session/logout', { method: 'POST' });
     } finally {
+      clearEmployeeSession();
       setSession({ status: 'anonymous', profile: null, error: '' });
     }
   }
@@ -589,7 +620,7 @@ function Profile({ profile }) {
     if (newPassword !== confirm) { setError('The new passwords do not match.'); return; }
     setBusy(true);
     try {
-      await apiRequest('/api/auth/password/change', {
+      await apiRequest('/api/employee/session/password/change', {
         method: 'POST', body: JSON.stringify({ currentPassword, newPassword }),
       });
       setCurrentPassword(''); setNewPassword(''); setConfirm('');
