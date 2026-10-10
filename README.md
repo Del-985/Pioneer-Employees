@@ -2,6 +2,77 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
+## v0.4.4 — Internal 2026 withholding review (NOT payroll disbursement)
+
+**Admin:** `https://admin.pioneerlegacyworks.com/payroll/tax`
+**Employee:** `https://employee.pioneeroutdoorservices.com/#/pay`
+
+This is a Pioneer-only, first-party **tax estimate preview**. It is not a
+tax filing, bank payment, authorized payroll run, or substitute electronic
+W-4. The backend uses signed-form transcriptions and document references,
+not uploaded SSNs or banking details.
+
+Calculation and verification steps:
+
+1. **Approve a Native Payroll earnings snapshot** under v0.4.3.
+2. Enter an employee's signed **2020–2026 federal W-4** fields, Ohio IT-4
+   exemption count, verified residential school district, and documented
+   Toledo taxability. Use a new effective date to revise an election.
+3. For **each employee and payroll run**, reconcile and record prior **2026
+   calendar-year-to-date Medicare and Social Security wages paid**, which
+   determine Social Security wage-base and Additional Medicare limits.
+   Zero prior wages require supporting payroll records too.
+4. Prepare an immutable, employee-level tax *draft*. This applies the
+   **2026 IRS Pub. 15-T Automated Percentage Method Worksheet 1A**;
+   employee/employer Social Security at 6.2%, Medicare at 1.45%, and
+   employee Additional Medicare at 0.9% over the $200,000 YTD threshold;
+   Ohio's **Optional Computer Formula effective Aug 1, 2026**; Toledo's
+   2.5% withholding; and verified earned-income-base school districts.
+5. Review gross wages, federal/Ohio/Toledo/district tax, FICA, authorized
+   voluntary deductions, reimbursements, and **projected** net.
+   Gross wages and voluntary deductions do not automatically establish
+   pretax classification; reimbursement tax treatment must be reviewed.
+6. Approve the estimate, or void a stale draft and recalculate. The API
+   prevents missing or unverified profiles, duplicate opening records,
+   stale approvals, cross-employee visibility and editing approved results.
+7. Employee **My Pay** displays only their own *approved* tax estimates,
+   explicitly marked **not payable** and **not an official pay statement**.
+
+**Deliberate restrictions:** Tax estimates are supported only for weekly or
+biweekly payroll ending August 1–December 31, 2026; signed W-4 forms for
+2020–2026 that do not claim federal withholding exemption; all wages verified
+as Toledo-taxable; and either verified *no school district tax* or a verified
+earned-income school district code/rate. Traditional-base school district
+withholding, work allocated across other municipalities, missing payroll
+history, unsupported dates, and unverified reimbursements block previews.
+
+**Not implemented:** FUTA/SUTA, state unemployment and Ohio workers'
+compensation costs, payroll tax remittance/deposits, legal tax filings,
+check/direct-deposit initiation, paid status, bank reconciliation,
+official pay stubs, and determination of final payable net wages.
+The v0.4.5 payments and v0.4.6 filing releases must be independently
+reviewed for tax and wage compliance before real use.
+
+Versioned primary calculation sources:
+
+- Federal: https://www.irs.gov/publications/p15t
+- Social Security/Medicare: https://www.irs.gov/publications/p15
+- Ohio: https://tax.ohio.gov/business/employer-withholding
+- Toledo: https://toledo.oh.gov/pay-taxes
+
+Backend migration: `057_payroll_tax_withholding.sql`.
+Scopes: `payroll.tax.read`, `payroll.tax.manage`, `payroll.tax.approve`.
+Backend routes: `GET/POST /payroll/tax/elections`,
+`GET/POST /payroll/runs/:runId/tax/openings`,
+`GET /payroll/tax/calculations`,
+`POST /payroll/runs/:runId/tax/prepare`,
+`GET /payroll/runs/:runId/tax`,
+`POST /payroll/runs/:runId/tax/approve`,
+`POST /payroll/runs/:runId/tax/void`,
+and `GET /api/employee/pay/tax-preview?businessUnitId=…`
+(admin paths are prefixed by
+`/api/admin/business-units/:businessUnitId`).
+
 ## v0.4.3 — Internal native payroll earnings calculation
 
 Pioneer is building payroll for **its own employees only**, not offering payroll
