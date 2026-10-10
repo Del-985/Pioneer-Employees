@@ -2,6 +2,30 @@
 
 Mobile-first staff portal for **Pioneer Legacy Works**, connected to the shared API at `api.pioneerlegacyworks.com`. Employees sign in with the same secure staff account created by Pioneer Admin, but the employee website contains **no administrator controls**.
 
+## v0.3.0 — Hours and timekeeping
+
+Pioneer Employees now includes **Hours & Time Clock**. The backend, not the phone,
+records clock-in and clock-out timestamps.
+
+- Clock in and out for a selected business unit
+- Optionally link the time entry to an accepted shift and/or assigned job
+- Start and stop **paid** or **unpaid** breaks; clock-out ends any active break
+- See worked time live, plus daily entries and weekly totals
+- See approved and pending hours separately and read manager review notes
+- Flag open punches exceeding **16 hours** as possible missed clock-outs (do not automatically close them)
+- Overnight shifts show their actual start/end instants; daylight saving transitions use real elapsed seconds
+- Weeks are **Monday–Sunday in America/Detroit**. Each complete shift is
+  attributed to the week in which it started, even if it ends the following day or week.
+
+Management has **Field Operations → Hours & Timesheets** for weekly employee summaries,
+manager corrections with required reasons, missing-shift creation, missed-clock-out
+closeout, review/approval, and a permanent action history.
+
+An **approved timesheet is not payroll processing or proof of payment**. This
+release does not calculate statutory overtime, automate wage payment, or
+replace payroll compliance review. Employee time records are scoped to
+their active employment; personnel time history is manager-restricted.
+
 ## v0.2 features
 
 The employee workspace is now connected to Pioneer Admin's Field Operations tools.
@@ -16,12 +40,9 @@ The employee workspace is now connected to Pioneer Admin's Field Operations tool
 - Receive assignment, route, cancellation and shift-offer email notifications
 - Existing v0.1 sign-in, dashboard, jobs, schedule, profile, and password management
 
-**Photo-upload prerequisites:** Pioneer Backend must have `OBJECT_STORAGE_BUCKET`,
-`OBJECT_STORAGE_ACCESS_KEY_ID`, `OBJECT_STORAGE_SECRET_ACCESS_KEY`,
-and related S3-compatible settings configured in Render. The storage bucket
-must permit CORS `PUT` requests from `https://employee.pioneeroutdoorservices.com`
-with `Content-Type`. The portal hides upload controls until object storage is
-available. An unconfigured bucket does not prevent job reporting.
+**Photo uploads:** The API uses its secure PostgreSQL-backed image storage by
+default. When S3-compatible object storage is configured, it uses signed
+uploads instead. The employee and manager portals work with either option.
 
 ## v0.1 foundation (retained)
 
@@ -33,7 +54,7 @@ available. An unconfigured bucket does not prevent job reporting.
 - Active-employee and assigned-work authorization enforced **by the backend**, not the browser
 - Mobile-first navigation and layouts
 
-The portal intentionally excludes time clock, payroll, customer billing and access to unrelated employee/customer records. Those belong to later milestones.
+The portal intentionally excludes payroll processing, customer billing and access to unrelated employee/customer records. Those belong to later milestones.
 
 ## Getting started
 
@@ -83,7 +104,19 @@ The API routes are hosted in **Pioneer-Backend**:
 - `GET /api/employee/availability` / `PUT /api/employee/availability` — weekly availability
 - `GET /api/employee/shifts` / `POST /api/employee/shifts/:shiftId/respond` — shift offers
 - `GET /api/employee/routes` — active crew routes
-- `POST /api/employee/jobs/:jobId/photos/upload-intent` and `POST /api/employee/photos/:photoId/complete` — signed photo upload workflow
+- `POST /api/employee/jobs/:jobId/photos/upload-intent` — creates a PostgreSQL or S3 photo upload intent
+- `POST /api/employee/photos/:photoId/content` — private binary upload when using PostgreSQL
+- `POST /api/employee/photos/:photoId/complete` — confirms the completed upload
+- `GET /api/employee/time?businessUnitId=…&weekStart=YYYY-MM-DD` — own current punch and weekly hours
+- `POST /api/employee/time/clock-in` — server-recorded start (optional assigned job / accepted shift)
+- `POST /api/employee/time/break/start` and `POST /api/employee/time/break/end` — paid/unpaid breaks
+- `POST /api/employee/time/clock-out` — submit completed time for manager review
+- `GET /api/admin/business-units/:businessUnitId/field/time` — permission-scoped management timesheet
+- `POST /api/admin/business-units/:businessUnitId/field/time/entries` — add documented missing shift
+- `PATCH /api/admin/business-units/:businessUnitId/field/time/entries/:entryId` — correct with reason
+- `POST /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/close` — resolve missed clock-out
+- `POST /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/review` — approve or return time
+- `GET /api/admin/business-units/:businessUnitId/field/time/entries/:entryId/history` — audited actions
 - Existing `/api/auth/login`, `/api/auth/logout`, `/api/auth/password/reset/request`, `/api/auth/password/reset`, and `/api/auth/password/change` routes remain the authentication system.
 
 Backend production environment variables:
@@ -104,7 +137,7 @@ An employee without any active employment records receives 403. Deactivating a p
 
 ## Next roadmap
 
-v0.3: onboarding, safety checklists, incident reports, time clock and supervisor review.  
-v0.4: approved payroll hours and bookkeeping integration.
+v0.3.1–0.3.4: onboarding, safety checklists, incident reports, equipment checkout, and broader personnel management.  
+v0.4: payroll calculation and bookkeeping integration from manager-approved time.
 
-For v0.2 field dispatch management, open **Pioneer Admin → Field Operations**.
+For timekeeping and field dispatch management, open **Pioneer Admin → Field Operations → Hours & Timesheets**.
