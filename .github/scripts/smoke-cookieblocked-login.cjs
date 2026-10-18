@@ -70,6 +70,12 @@ async function run(){
      if(!isBearer)throw new Error('Employee capabilities lacked token');
      await send(200,{data:{photoUploads:true}});return;
    }
+   if(path.startsWith('/api/employee/pay/')){
+     if(!isBearer)throw new Error('Pay stub request omitted employee authentication');
+     if(path.endsWith('/paid-statements'))await send(200,{data:[{id:'payment-one',runId:'run-one',payDate:'2026-10-09',status:'recorded_paid',netPaidCents:10433,statement:{periodStart:'2026-09-28',periodEndExclusive:'2026-10-05',amounts:{gross_cents:13500,total_withholding_cents:1567,voluntary_deductions_cents:1500,reimbursement_cents:0}}}]});
+     else if(path.endsWith('/download'))await send(200,{data:{filename:'pay-stub.html',html:'<!doctype html><h1>Final Pay Stub</h1><p>Net paid $104.33</p>'}});
+     else await send(200,{data:[]});return;
+   }
    await send(404,{error:{message:'Unknown mock route '+path}});
   });
   await page.goto(origin+'/#/login',{waitUntil:'domcontentloaded'});
@@ -91,6 +97,14 @@ async function run(){
   if(loginCount!==1||validReads<2)throw new Error('Session was not restored after page reload');
   console.log('PASS: session restoration from tab-scoped storage without third-party cookies');
 
+  await page.goto(origin+'/#/pay',{waitUntil:'domcontentloaded'});
+  await page.getByRole('heading',{name:'Final Pay Stubs',exact:true}).waitFor();
+  await page.getByText('$104.33',{exact:false}).first().waitFor();
+  if(await page.locator('details').getAttribute('open')!==null)throw new Error('Preliminary calculations should be collapsed');
+  const stubDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download Pay Stub',exact:true}).click();
+  if((await stubDownload).suggestedFilename()!=='pay-stub.html')throw new Error('Final stub download failed');
+  console.log('PASS: final recorded net pay and authenticated printable stub download');
   await page.goto(origin+'/#/profile',{waitUntil:'domcontentloaded'});
   await page.getByText('$19.00/hour').waitFor({timeout:15000});
   await page.getByRole('button',{name:'Sign Out'}).first().click();
