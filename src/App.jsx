@@ -4,12 +4,14 @@ import { ApiError, apiRequest, saveEmployeeSession, clearEmployeeSession } from 
 import { FieldJobActions, AvailabilityPage, ShiftOffersPage, CrewRoutesPage } from './FieldOperations.jsx';
 import TimekeepingPage from './Timekeeping.jsx';
 import GrossPayPage from './GrossPay.jsx';
+import LeaveRequests from './LeaveRequests.jsx';
 
 const navigation = [
   { to: '/', label: 'Dashboard', symbol: '▦', end: true },
   { to: '/jobs', label: 'My Jobs', symbol: '▤' },
   { to: '/time', label: 'Hours', symbol: '◷' },
   { to: '/pay', label: 'My Pay', symbol: '¢' },
+  { to: '/leave', label: 'Request PTO', symbol: '◴' },
   { to: '/schedule', label: 'Schedule', symbol: '▦' },
   { to: '/shifts', label: 'Shifts', symbol: '◷' },
   { to: '/availability', label: 'Availability', symbol: '◴' },
@@ -744,6 +746,7 @@ function PortalShell({ profile, logout }) {
             <Route path="/schedule" element={<Schedule jobs={jobs} profile={profile} />} />
             <Route path="/time" element={<TimekeepingPage profile={profile} />} />
             <Route path="/pay" element={<GrossPayPage profile={profile} />} />
+             <Route path="/leave" element={<LeaveRequests profile={profile} />} />
             <Route path="/shifts" element={<ShiftOffersPage profile={profile} />} />
             <Route path="/availability" element={<AvailabilityPage profile={profile} />} />
             <Route path="/routes" element={<CrewRoutesPage profile={profile} />} />
