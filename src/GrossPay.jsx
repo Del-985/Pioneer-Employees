@@ -8,6 +8,7 @@ function previousDay(day){const date=new Date(day+'T12:00:00Z');
 export default function GrossPayPage({profile}){
   const [unit,setUnit]=useState(profile.employment?.[0]?.businessUnitId||'');
   const [statements,setStatements]=useState([]);
+  const [leave,setLeave]=useState(null);
   const [paid,setPaid]=useState([]),[downloading,setDownloading]=useState('');
   const generation=useRef(0);
   async function downloadStub(id){setDownloading(id);setError('');try{const r=await apiRequest('/api/employee/pay/paid-statements/'+id+'/download?businessUnitId='+unit);const url=URL.createObjectURL(new Blob([r.data.html],{type:'text/html;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=r.data.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){setError(e.message);}finally{setDownloading('');}}
@@ -21,16 +22,17 @@ export default function GrossPayPage({profile}){
   const load=useCallback(async()=>{
     if(!unit)return;
     const current=++generation.current;setPaid([]);setBusy(true);
-    try{const [res,adj,provider,native,tax,final]=await Promise.all([
+    try{const [res,adj,provider,native,tax,final,leaveResponse]=await Promise.all([
       apiRequest('/api/employee/pay/statements?businessUnitId='+unit),
       apiRequest('/api/employee/pay/adjustments?businessUnitId='+unit),
       apiRequest('/api/employee/pay/provider-statements?businessUnitId='+unit),
       apiRequest('/api/employee/pay/native-preview?businessUnitId='+unit),
       apiRequest('/api/employee/pay/tax-preview?businessUnitId='+unit),
       apiRequest('/api/employee/pay/paid-statements?businessUnitId='+unit),
+      apiRequest('/api/employee/leave/balances?businessUnitId='+unit),
     ]);
       if(current!==generation.current)return;
-      setPaid(final.data||[]);setStatements((res.data||[]).filter(x=>!(final.data||[]).some(p=>p.runId===x.runId)));setAdjustments(adj.data||[]);
+      setLeave(leaveResponse.data);setPaid(final.data||[]);setStatements((res.data||[]).filter(x=>!(final.data||[]).some(p=>p.runId===x.runId)));setAdjustments(adj.data||[]);
       setProviderStatements(provider.data||[]);setNativePreviews(native.data||[]);
       setTaxPreviews(tax.data||[]);
       setError('');}
@@ -49,6 +51,13 @@ export default function GrossPayPage({profile}){
         {profile.employment.map(e=><option key={e.id} value={e.businessUnitId}>{e.businessName}</option>)}
       </select></label>}
     {error&&<p className="alert alert-error" role="alert">{error}</p>}
+    <section aria-label="Paid leave balances"><h2>Paid Leave</h2>
+      <p>PTO and Sick Leave each earn 1 hour per 30 approved hours worked. Planned time off must be requested at least 7 days in advance. Unexpected illness should be reported as soon as practicable.</p>
+      {leave&&<div className="gross-pay-breakdown">
+        <div><span>Available PTO</span><strong>{leave.balances.pto.balanceHours.toFixed(2)} hours</strong></div>
+        <div><span>Available Sick Leave</span><strong>{leave.balances.sick.balanceHours.toFixed(2)} hours</strong></div>
+      </div>}
+    </section>
     <section aria-label="Final Pay Stubs"><h2>Final Pay Stubs</h2>
       <p>Issued from payments recorded by your employer. Download a printable stub to keep or save as PDF from your browser’s Print menu.</p>
       {!busy&&!paid.length&&!error&&<p>No final pay stubs have been issued yet. A stub appears after your employer records your completed payment.</p>}
