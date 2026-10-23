@@ -29,6 +29,7 @@ async function run(){
   browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
   const page=await browser.newPage();
   const errors=[];
+   let ptoSubmitted=null;
   let authenticated=false,loginCount=0,validReads=0,logoutCount=0,blockedCookieReads=0;
   page.on('pageerror',err=>errors.push(err.stack||err.message));
   await page.route('https://api.pioneerlegacyworks.com/**',async route=>{
@@ -78,7 +79,15 @@ async function run(){
         policy:{effective_on:'2026-10-23',hours_worked_per_leave_hour:30,planned_notice_days:7}}});
       return;
     }
-    if(path.startsWith('/api/employee/pay/')){
+    if(path==='/api/employee/leave/requests'){
+     if(!isBearer)throw new Error('PTO request used no bearer authorization');
+     if(req.method()==='POST'){
+       ptoSubmitted=JSON.parse(req.postData()||'{}');
+       await send(201,{data:{id:'request-one',...ptoSubmitted,status:'pending'}});return;
+     }
+     await send(200,{data:ptoSubmitted?[{id:'request-one',...ptoSubmitted,status:'pending',note:ptoSubmitted.note}]:[]});return;
+   }
+   if(path.startsWith('/api/employee/pay/')){
      if(!isBearer)throw new Error('Pay stub request omitted employee authentication');
      if(path.endsWith('/paid-statements'))await send(200,{data:[{id:'payment-one',runId:'run-one',payDate:'2026-10-09',status:'recorded_paid',netPaidCents:10433,statement:{periodStart:'2026-09-28',periodEndExclusive:'2026-10-05',amounts:{gross_cents:13500,total_withholding_cents:1567,voluntary_deductions_cents:1500,reimbursement_cents:0}}}]});
      else if(path.endsWith('/download'))await send(200,{data:{filename:'pay-stub.html',html:'<!doctype html><h1>Final Pay Stub</h1><p>Net paid $104.33</p>'}});
@@ -114,7 +123,16 @@ async function run(){
   await page.getByRole('button',{name:'Download Pay Stub',exact:true}).click();
   if((await stubDownload).suggestedFilename()!=='pay-stub.html')throw new Error('Final stub download failed');
   console.log('PASS: final recorded net pay and authenticated printable stub download');
-  await page.goto(origin+'/#/profile',{waitUntil:'domcontentloaded'});
+  await page.goto(origin+'/#/leave',{waitUntil:'domcontentloaded'});
+   await page.getByRole('heading',{name:'Request PTO',exact:true}).waitFor();
+   const daysAhead=new Date(Date.now()+20*86400000).toISOString().slice(0,10);
+   await page.locator('input[type="date"]').first().fill(daysAhead);
+   await page.locator('input[type="number"]').fill('1.5');
+   await page.getByRole('button',{name:'Submit PTO Request'}).click();
+   await page.getByText('PTO request submitted for management review.').waitFor();
+   if(!ptoSubmitted||ptoSubmitted.requestedHours!==1.5)throw new Error('PTO request was not sent correctly');
+   console.log('PASS: authenticated PTO request submission and history');
+   await page.goto(origin+'/#/profile',{waitUntil:'domcontentloaded'});
   await page.getByText('$19.00/hour').waitFor({timeout:15000});
   await page.getByRole('button',{name:'Sign Out'}).first().click();
   await page.getByRole('heading',{name:'Employee Sign In'}).waitFor({timeout:15000});
