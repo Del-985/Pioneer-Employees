@@ -70,7 +70,15 @@ async function run(){
      if(!isBearer)throw new Error('Employee capabilities lacked token');
      await send(200,{data:{photoUploads:true}});return;
    }
-   if(path.startsWith('/api/employee/pay/')){
+   if(path==='/api/employee/leave/balances'){
+      if(!isBearer)throw new Error('Leave balances requested without bearer authentication');
+      await send(200,{data:{employeeId,businessUnitId:businessId,
+        balances:{pto:{balanceHours:1.5,earnedHours:1.5,reversedHours:0},
+          sick:{balanceHours:1.5,earnedHours:1.5,reversedHours:0}},
+        policy:{effective_on:'2026-10-23',hours_worked_per_leave_hour:30,planned_notice_days:7}}});
+      return;
+    }
+    if(path.startsWith('/api/employee/pay/')){
      if(!isBearer)throw new Error('Pay stub request omitted employee authentication');
      if(path.endsWith('/paid-statements'))await send(200,{data:[{id:'payment-one',runId:'run-one',payDate:'2026-10-09',status:'recorded_paid',netPaidCents:10433,statement:{periodStart:'2026-09-28',periodEndExclusive:'2026-10-05',amounts:{gross_cents:13500,total_withholding_cents:1567,voluntary_deductions_cents:1500,reimbursement_cents:0}}}]});
      else if(path.endsWith('/download'))await send(200,{data:{filename:'pay-stub.html',html:'<!doctype html><h1>Final Pay Stub</h1><p>Net paid $104.33</p>'}});
@@ -100,6 +108,7 @@ async function run(){
   await page.goto(origin+'/#/pay',{waitUntil:'domcontentloaded'});
   await page.getByRole('heading',{name:'Final Pay Stubs',exact:true}).waitFor();
   await page.getByText('$104.33',{exact:false}).first().waitFor();
+   await page.getByText('Available Sick Leave').waitFor();
   if(await page.locator('details').getAttribute('open')!==null)throw new Error('Preliminary calculations should be collapsed');
   const stubDownload=page.waitForEvent('download');
   await page.getByRole('button',{name:'Download Pay Stub',exact:true}).click();
