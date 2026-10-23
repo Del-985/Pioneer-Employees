@@ -132,6 +132,19 @@ async function run(){
    await page.getByText('PTO request submitted for management review.').waitFor();
    if(!ptoSubmitted||ptoSubmitted.requestedHours!==1.5)throw new Error('PTO request was not sent correctly');
    console.log('PASS: authenticated PTO request submission and history');
+   const laterDate=new Date(Date.now()+24*86400000).toISOString().slice(0,10);
+   const lastDate=new Date(Date.now()+25*86400000).toISOString().slice(0,10);
+   await page.locator('input[type="date"]').first().fill(laterDate);
+   await page.locator('input[type="date"]').nth(1).fill(lastDate);
+   await page.locator('input[type="number"]').nth(0).fill('0.5');
+   await page.locator('input[type="number"]').nth(1).fill('1');
+   await page.getByRole('button',{name:'Submit PTO Request'}).click();
+   await page.getByText('PTO request submitted for management review.').waitFor();
+   if(!ptoSubmitted||ptoSubmitted.requestedHours!==1.5||
+      ptoSubmitted.days?.length!==2||ptoSubmitted.days[0].hours!==0.5||
+      ptoSubmitted.days[1].hours!==1)
+     throw new Error('Multi-day PTO must submit explicit paid hours by date');
+   console.log('PASS: multi-day PTO hours are allocated to each selected day');
    await page.goto(origin+'/#/profile',{waitUntil:'domcontentloaded'});
   await page.getByText('$19.00/hour').waitFor({timeout:15000});
   await page.getByRole('button',{name:'Sign Out'}).first().click();

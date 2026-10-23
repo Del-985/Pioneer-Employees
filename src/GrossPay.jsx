@@ -65,6 +65,11 @@ export default function GrossPayPage({profile}){
         <div className="field-section-heading"><div><h3>Pay Date: {p.payDate}</h3><p>{p.statement.periodStart} – {previousDay(p.statement.periodEndExclusive)}</p></div><span className="status-tag">{p.status==='reversed'?'Reversed — Not Current Pay':'Final · Recorded Paid'}</span></div>
         <div className="gross-pay-gross">{money(p.netPaidCents)}<small>{p.status==='reversed'?'Original Net Payment — Reversed':'Net Paid'}</small></div>
         <div className="gross-pay-breakdown">{[['Gross wages',a.gross_cents],['Federal income tax',a.federal_income_cents],['Ohio income tax',a.ohio_income_cents],['Toledo income tax',a.toledo_income_cents],['School district tax',a.school_income_cents],['Social Security',a.social_security_cents],['Medicare',a.medicare_cents],['Additional Medicare',a.additional_medicare_cents],['Total tax withheld',a.total_withholding_cents],['Other deductions',a.voluntary_deductions_cents],['Reimbursements',a.reimbursement_cents]].map(([label,value])=><div key={label}><span>{label}</span><strong>{money(value)}</strong></div>)}</div>
+        {(p.statement.ptoEarnings||[]).length>0&&<div><h4>Paid Time Off (PTO)</h4>
+          {(p.statement.ptoEarnings||[]).map(entry=><p key={entry.requestDayId}>
+            {entry.leaveDate} — {hours(entry.paidSeconds)} paid hours at {money(entry.hourlyCents)}/hour = {money(entry.ptoCents)}
+          </p>)}<p className="muted">PTO is included in gross taxable wages, not hours worked or overtime.</p>
+        </div>}
         <button className="button button-outline" disabled={Boolean(downloading)} onClick={()=>downloadStub(p.id)}>{downloading===p.id?'Preparing…':'Download Pay Stub'}</button>
       </article>;})}
     </section>
@@ -121,6 +126,7 @@ export default function GrossPayPage({profile}){
         <div className="gross-pay-breakdown">
           <div><span>Regular wages</span><strong>{money(item.regularCents)}</strong></div>
           <div><span>Estimated overtime</span><strong>{money(item.overtimeCents)}</strong></div>
+          <div><span>Paid Time Off (PTO)</span><strong>{money(item.ptoCents||0)}</strong></div>
           <div><span>Posted wage adjustments</span><strong>{money(item.wageAdjustmentsCents)}</strong></div>
           <div><span>Voluntary deduction estimate</span><strong>{money(item.voluntaryDeductionsCents)}</strong></div>
           <div><span>Separate expense reimbursements</span><strong>{money(item.reimbursementCents)}</strong></div>
@@ -175,6 +181,8 @@ export default function GrossPayPage({profile}){
         <div><span>Estimated Overtime Hours</span><strong>{hours(statement.overtimeSeconds)}</strong></div>
         <div><span>Regular Gross</span><strong>{money(statement.regularCents)}</strong></div>
         <div><span>Estimated Overtime Gross</span><strong>{money(statement.overtimeCents)}</strong></div>
+        <div><span>PTO Hours (not worked)</span><strong>{hours(statement.ptoSeconds||0)}</strong></div>
+        <div><span>Paid PTO Gross</span><strong>{money(statement.ptoCents||0)}</strong></div>
       </div>
     </section>)}</div>
     <section className="gross-pay-adjustments">
