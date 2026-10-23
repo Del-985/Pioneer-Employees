@@ -10,12 +10,13 @@ function afterDays(day,days){
   const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);
   return d.toISOString().slice(0,10);
 }
-const statusLabels={pending:'Awaiting Manager Approval',approved:'Approved',denied:'Denied',cancelled:'Cancelled'};
+const statusLabels={pending:'Awaiting Manager Approval',approved:'Recorded / Approved',denied:'Denied',cancelled:'Cancelled'};
 export default function LeaveRequests({profile}){
   const [unit,setUnit]=useState(profile.employment?.[0]?.businessUnitId||'');
   const [balances,setBalances]=useState(null),[policy,setPolicy]=useState(null),[requests,setRequests]=useState([]);
   const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
   const [hours,setHours]=useState(''),[note,setNote]=useState('');
+  const [leaveType,setLeaveType]=useState('pto');
   const [dayHours,setDayHours]=useState({});
   const [loading,setLoading]=useState(false),[acting,setActing]=useState(false);
   const [error,setError]=useState(''),[success,setSuccess]=useState('');
@@ -33,8 +34,8 @@ export default function LeaveRequests({profile}){
     finally{setLoading(false);}
   },[unit]);
   useEffect(()=>{setBalances(null);setPolicy(null);setRequests([]);void load();},[load]);
-  const firstAllowed=afterDays(todayDetroit(),policy?.planned_notice_days??7);
-  const available=balances?.pto?.balanceHours??0;
+  const firstAllowed=afterDays(todayDetroit(),leaveType==='sick'?-30:(policy?.planned_notice_days??7));
+  const available=balances?.[leaveType]?.balanceHours??0;
   const multiDay=Boolean(startDate&&endDate&&startDate!==endDate);
   const dates=[];
   if(startDate&&endDate&&startDate<=endDate){
@@ -48,9 +49,9 @@ export default function LeaveRequests({profile}){
     try{
       if(!withinRange||total<=0||total>available)throw new Error('Check the leave dates and available PTO balance.');
       await apiRequest('/api/employee/leave/requests',{method:'POST',
-        body:JSON.stringify({businessUnitId:unit,startDate,endDate,requestedHours:total,note,
+        body:JSON.stringify({businessUnitId:unit,leaveType,startDate,endDate,requestedHours:total,note,
           ...(multiDay?{days}: {})})});
-      setSuccess('PTO request submitted for management review.');
+      setSuccess(leaveType==='pto'?'PTO request submitted for management review.':'Sick leave recorded. No advance notice or management approval was required.');
       setStartDate('');setEndDate('');setHours('');setDayHours({});setNote('');
       await load();
     }catch(e){setError(e.message||'Unable to submit PTO request.');}
@@ -67,7 +68,7 @@ export default function LeaveRequests({profile}){
   }
   return <div className="page-body">
     <header className="page-heading"><div><span className="eyebrow">Employee Benefits</span>
-      <h1>Request PTO</h1><p>Submit planned paid time off for manager approval.</p>
+      <h1>Request PTO</h1><p>Request planned PTO or record paid sick leave without advance notice.</p>
     </div><button type="button" className="button button-outline" disabled={loading||acting} onClick={load}>Refresh</button></header>
     {profile.employment.length>1&&<label className="field"><span>Business</span>
       <select value={unit} onChange={e=>setUnit(e.target.value)}>
@@ -79,11 +80,18 @@ export default function LeaveRequests({profile}){
       <p><strong>{available.toFixed(2)} hours</strong> currently available to request.
         {balances?.pto?.pendingHours>0&&<> Another {balances.pto.pendingHours.toFixed(2)} hours are reserved by pending requests.</>}
       </p>
-      <p>Sick leave is separate: {Number(balances?.sick?.balanceHours??0).toFixed(2)} hours available.
-        This form is for planned PTO, not unexpected illness.</p>
-      <p>Planned PTO must be requested at least {policy?.planned_notice_days??7} calendar days in advance. Requests are not automatically approved.</p>
+      <p>Sick leave: {Number(balances?.sick?.balanceHours??0).toFixed(2)} hours available. PTO:
+        {Number(balances?.pto?.balanceHours??0).toFixed(2)} hours available.</p>
+      <p>Both banks roll over without caps. PTO can be used 30 days after hire and requires at least
+        {policy?.planned_notice_days??7} days notice. Sick leave requires no advance notice or approval.</p>
     </section>
-    <section className="content-card"><h2>New PTO Request</h2>
+    <section className="content-card"><h2>{leaveType==='pto'?'New PTO Request':'Record Sick Leave'}</h2>
+      <label className="field"><span>Leave Type</span><select value={leaveType} onChange={e=>{
+        setLeaveType(e.target.value);setStartDate('');setEndDate('');setHours('');setDayHours({});setError('');
+      }}><option value="pto">Planned PTO (seven-day notice, 30-day eligibility)</option>
+        <option value="sick">Paid Sick Leave (no advance notice)</option></select></label>
+      {leaveType==='sick'&&<p className="muted">Sick leave is recorded immediately against accrued sick hours.
+        Report your absence as soon as reasonably possible. No seven-day notice is required.</p>}
       <form onSubmit={submit}>
         <div className="form-grid">
           <label className="field"><span>First Day Off</span><input type="date" required min={firstAllowed} value={startDate}
@@ -95,20 +103,20 @@ export default function LeaveRequests({profile}){
             value={hours} onChange={e=>setHours(e.target.value)} placeholder="e.g. 8" /></label>}
         </div>
         {multiDay&&<div className="content-card"><h3>Paid Hours by Date</h3>
-          <p>Enter the exact number of PTO hours for each date. Leave a day at zero if no PTO should be paid for it.</p>
+          <p>Enter the number of paid leave hours for each date. Leave a day at zero if no leave is needed.</p>
           <div className="form-grid">{dates.map(date=><label className="field" key={date}>
             <span>{date}</span><input type="number" min="0" max="24" step="0.25"
               value={dayHours[date]??'0'} onChange={e=>setDayHours(previous=>({...previous,[date]:e.target.value}))}/>
           </label>)}</div>
-          <p><strong>Total PTO: {total.toFixed(2)} hours</strong> · Available: {available.toFixed(2)} hours</p>
+          <p><strong>Total Paid Leave: {total.toFixed(2)} hours</strong> · Available: {available.toFixed(2)} hours</p>
           {!withinRange&&<p role="alert" className="alert alert-error">Split requests longer than 31 days.</p>}
         </div>}
         <label className="field"><span>Note to Management (optional)</span>
           <textarea maxLength={1000} rows={3} value={note} onChange={e=>setNote(e.target.value)}
             placeholder="Any scheduling details your manager should know" /></label>
-        <p className="muted">Enter only the paid hours you want to use. Days you were not scheduled to work should not be charged.</p>
+        <p className="muted">Enter only the paid hours of work missed. Unscheduled days should not be charged.</p>
         <button type="submit" className="button" disabled={acting||loading||!balances||available<0.25||!withinRange||total<=0||total>available}>
-          {acting?'Submitting…':'Submit PTO Request'}</button>
+          {acting?'Submitting…':leaveType==='pto'?'Submit PTO Request':'Record Paid Sick Leave'}</button>
       </form>
     </section>
     <section className="content-card"><h2>Your Requests</h2>
@@ -116,7 +124,7 @@ export default function LeaveRequests({profile}){
       {requests.map(r=><article key={r.id} className="content-card" style={{marginTop:'1rem'}}>
         <div className="field-section-heading"><div>
           <h3>{r.startDate}{r.endDate!==r.startDate?' through '+r.endDate:''}</h3>
-          <p>{r.requestedHours.toFixed(2)} paid hours · {statusLabels[r.status]||r.status}</p>
+          <p>{r.leaveType==='sick'?'Sick Leave':'PTO'} · {r.requestedHours.toFixed(2)} paid hours · {statusLabels[r.status]||r.status}</p>
         </div><span className="status-tag">{r.status}</span></div>
         {r.note&&<p>Note: {r.note}</p>}
         {r.managerNote&&<p>Management: {r.managerNote}</p>}
